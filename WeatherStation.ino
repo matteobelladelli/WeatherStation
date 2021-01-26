@@ -2,9 +2,9 @@
  * Temperature
  * Humidity
  * Barometic Pressure
- * Wind
- * Rain
- * UV Index
+ * Wind ???
+ * Rain ???
+ * UV Index ???
  */
 
 
