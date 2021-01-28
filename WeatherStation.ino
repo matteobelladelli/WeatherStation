@@ -9,19 +9,22 @@
 #include <LiquidCrystal_I2C.h>
 #include <Arduino_FreeRTOS.h>
 #include <semphr.h>
+#include <DHT.h>
 
-#define LED_PIN 13
+#define LEDPIN 13
+#define DHTPIN 2
+#define DHTTYPE DHT11
 
-#define TEMP_DELAY 5000
-#define HUM_DELAY 5000
-#define RAIN_DELAY 5000
-#define LCD_DELAY 5000
-#define LED_DELAY 5000
+#define TEMPDELAY 5000
+#define HUMDELAY 5000
+#define RAINDELAY 10000
+#define LCDDELAY 5000
+#define LEDDELAY 10000
 
 LiquidCrystal_I2C lcd(0x3f, 16, 2);
+DHT dht(DHTPIN, DHTTYPE);
 
-void TempUpdate( void *pvParameters );
-void HumUpdate( void *pvParameters );
+void TempHumUpdate( void *pvParameters );
 void RainUpdate( void *pvParameters );
 void LCDPrint( void *pvParameters );
 void LEDBlink( void *pvParameters );
@@ -39,23 +42,26 @@ void setup()
 {
   //Serial.begin(9600);
 
-  /* temperature and humidity i2c lcd display */
+  /* i2c lcd display */
   lcd.init();
   lcd.backlight();
 
-  /* rain blinking led */
-  pinMode(LED_PIN, OUTPUT);
+  /* led */
+  pinMode(LEDPIN, OUTPUT);
+
+  /* dht11 sensor */
+  dht.begin();
 
   mutex = xSemaphoreCreateMutex();
 
   /* update */
-  xTaskCreate( TempUpdate, "TempUpdate", 128, NULL, 1, NULL );
-  xTaskCreate( HumUpdate, "HumUpdate", 128, NULL, 1, NULL );
+  xTaskCreate( TempHumUpdate, "TempHumUpdate", 128, NULL, 1, NULL );
   xTaskCreate( RainUpdate, "RainUpdate", 128, NULL, 1, NULL );
 
   /* output */
   xTaskCreate( LCDPrint, "LCDPrint", 128, NULL, 1, NULL );
   xTaskCreate( LEDBlink, "LEDBlink", 128, NULL, 1, NULL );
+  
 }
 
 void loop()
@@ -67,39 +73,26 @@ void loop()
 //      update
 // ----------------
 
-void TempUpdate( void *pvParameters )
+void TempHumUpdate( void *pvParameters )
 {
   float temp;
+  float hum;
 
   for (;;)
   {
-    temp = random(0, 40);
+    temp = dht.readTemperature();
+    hum = dht.readHumidity();
+    //temp = random(0, 50);
+    //hum = random(10, 90);
     
     if (xSemaphoreTake(mutex, 5) == pdTRUE)
     {
       data.temp = temp;
-      xSemaphoreGive(mutex);
-    }
-    
-    vTaskDelay( TEMP_DELAY / portTICK_PERIOD_MS );
-  }
-}
-
-void HumUpdate( void *pvParameters )
-{
-  int hum;
-
-  for (;;)
-  {
-    hum = random(10, 90);
-    
-    if (xSemaphoreTake(mutex, 5) == pdTRUE)
-    {
       data.hum = hum;
       xSemaphoreGive(mutex);
     }
     
-    vTaskDelay( HUM_DELAY / portTICK_PERIOD_MS );
+    vTaskDelay( TEMPDELAY / portTICK_PERIOD_MS );
   }
 }
 
@@ -117,7 +110,7 @@ void RainUpdate( void *pvParameters )
       xSemaphoreGive(mutex);
     }
     
-    vTaskDelay( RAIN_DELAY / portTICK_PERIOD_MS );
+    vTaskDelay( RAINDELAY / portTICK_PERIOD_MS );
   }
 }
 
@@ -126,8 +119,8 @@ void RainUpdate( void *pvParameters )
 // ----------------
 
 /* 
- * output channel #1
- * temperature and humidity i2c lcd display
+ * output channel #1: i2c lcd display 
+ * [temperature, humidity]
  */
 void LCDPrint( void *pvParameters )
 { 
@@ -154,13 +147,13 @@ void LCDPrint( void *pvParameters )
     lcd.print(hum);
     lcd.print("%");
     
-    vTaskDelay( LCD_DELAY / portTICK_PERIOD_MS );
+    vTaskDelay( LCDDELAY / portTICK_PERIOD_MS );
   }
 }
 
 /* 
- * output channel #2
- * rain blinking led
+ * output channel #2: led
+ * [rain]
  */
 void LEDBlink( void *pvParameters )
 { 
@@ -174,9 +167,9 @@ void LEDBlink( void *pvParameters )
       xSemaphoreGive(mutex);
     }
 
-    if (rain == 1) digitalWrite(LED_PIN, HIGH);
-    else digitalWrite(LED_PIN, LOW);
+    if (rain == 1) digitalWrite(LEDPIN, HIGH);
+    else digitalWrite(LEDPIN, LOW);
     
-    vTaskDelay( LED_DELAY / portTICK_PERIOD_MS );
+    vTaskDelay( LEDDELAY / portTICK_PERIOD_MS );
   }
 }
