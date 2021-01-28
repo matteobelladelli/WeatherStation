@@ -10,8 +10,13 @@
 #include <Arduino_FreeRTOS.h>
 #include <semphr.h>
 
-#define LCD_PIN 3
 #define LED_PIN 13
+
+#define TEMP_DELAY 5000
+#define HUM_DELAY 5000
+#define RAIN_DELAY 5000
+#define LCD_DELAY 5000
+#define LED_DELAY 5000
 
 LiquidCrystal_I2C lcd(0x3f, 16, 2);
 
@@ -32,13 +37,11 @@ SemaphoreHandle_t mutex;
 
 void setup()
 {
-  Serial.begin(9600);
+  //Serial.begin(9600);
 
   /* temperature and humidity i2c lcd display */
   lcd.init();
   lcd.backlight();
-  pinMode(LCD_PIN, OUTPUT);
-  analogWrite(LCD_PIN, 50);
 
   /* rain blinking led */
   pinMode(LED_PIN, OUTPUT);
@@ -52,7 +55,7 @@ void setup()
 
   /* output */
   xTaskCreate( LCDPrint, "LCDPrint", 128, NULL, 1, NULL );
-  //xTaskCreate( LEDBlink, "LEDBlink", 128, NULL, 1, NULL );
+  xTaskCreate( LEDBlink, "LEDBlink", 128, NULL, 1, NULL );
 }
 
 void loop()
@@ -78,7 +81,7 @@ void TempUpdate( void *pvParameters )
       xSemaphoreGive(mutex);
     }
     
-    vTaskDelay( 1000 / portTICK_PERIOD_MS );
+    vTaskDelay( TEMP_DELAY / portTICK_PERIOD_MS );
   }
 }
 
@@ -96,7 +99,7 @@ void HumUpdate( void *pvParameters )
       xSemaphoreGive(mutex);
     }
     
-    vTaskDelay( 1000 / portTICK_PERIOD_MS );
+    vTaskDelay( HUM_DELAY / portTICK_PERIOD_MS );
   }
 }
 
@@ -114,7 +117,7 @@ void RainUpdate( void *pvParameters )
       xSemaphoreGive(mutex);
     }
     
-    vTaskDelay( 1000 / portTICK_PERIOD_MS );
+    vTaskDelay( RAIN_DELAY / portTICK_PERIOD_MS );
   }
 }
 
@@ -138,7 +141,7 @@ void LCDPrint( void *pvParameters )
       hum = data.hum;
       xSemaphoreGive(mutex);
     }
-
+      
     lcd.clear();
 
     lcd.setCursor(0, 0);
@@ -151,7 +154,7 @@ void LCDPrint( void *pvParameters )
     lcd.print(hum);
     lcd.print("%");
     
-    vTaskDelay( 1000 / portTICK_PERIOD_MS );
+    vTaskDelay( LCD_DELAY / portTICK_PERIOD_MS );
   }
 }
 
@@ -174,6 +177,6 @@ void LEDBlink( void *pvParameters )
     if (rain == 1) digitalWrite(LED_PIN, HIGH);
     else digitalWrite(LED_PIN, LOW);
     
-    vTaskDelay( 1000 / portTICK_PERIOD_MS );
+    vTaskDelay( LED_DELAY / portTICK_PERIOD_MS );
   }
 }
