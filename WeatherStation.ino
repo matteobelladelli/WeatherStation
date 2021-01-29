@@ -1,8 +1,8 @@
 /*
  * temperature : i2c lcd 1602 display
  * humidity : i2c lcd 1602 display
- * rain : led (low/high)
  * water level : 7-segment display
+ * rain : led (low/high)
  */
 
 #include <LiquidCrystal_I2C.h>
@@ -79,7 +79,7 @@ void setup()
   /* output */
   xTaskCreate( LCDPrint, "LCDPrint", 128, NULL, 1, NULL );
   xTaskCreate( SEGPrint, "SEGPrint", 128, NULL, 1, NULL );
-  //xTaskCreate( LEDBlink, "LEDBlink", 128, NULL, 1, NULL );
+  xTaskCreate( LEDBlink, "LEDBlink", 128, NULL, 1, NULL );
   
 }
 
