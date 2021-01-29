@@ -9,20 +9,23 @@
 #include <LiquidCrystal_I2C.h>
 #include <Arduino_FreeRTOS.h>
 #include <semphr.h>
-#include <DHT.h>
+#include <dht11.h>
 
+/* dht11 */
+dht11 DHT11;
+#define DHT11PIN 2
+
+/* i2c lcd display */
+LiquidCrystal_I2C lcd(0x3f, 16, 2);
+
+/* led */
 #define LEDPIN 13
-#define DHTPIN 2
-#define DHTTYPE DHT11
 
 #define TEMPDELAY 5000
 #define HUMDELAY 5000
 #define RAINDELAY 10000
 #define LCDDELAY 5000
 #define LEDDELAY 10000
-
-LiquidCrystal_I2C lcd(0x3f, 16, 2);
-DHT dht(DHTPIN, DHTTYPE);
 
 void TempHumUpdate( void *pvParameters );
 void RainUpdate( void *pvParameters );
@@ -45,12 +48,10 @@ void setup()
   /* i2c lcd display */
   lcd.init();
   lcd.backlight();
+  lcd.clear();
 
   /* led */
   pinMode(LEDPIN, OUTPUT);
-
-  /* dht11 sensor */
-  dht.begin();
 
   mutex = xSemaphoreCreateMutex();
 
@@ -80,8 +81,9 @@ void TempHumUpdate( void *pvParameters )
 
   for (;;)
   {
-    temp = dht.readTemperature();
-    hum = dht.readHumidity();
+    DHT11.read(DHT11PIN);
+    temp = (float)DHT11.temperature;
+    hum = (float)DHT11.humidity;
     //temp = random(0, 50);
     //hum = random(10, 90);
     
