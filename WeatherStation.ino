@@ -41,10 +41,10 @@ void LEDBlink( void *pvParameters );
 
 struct package
 {
-  float temp; /* celsius */
-  float hum; /* percentage */
-  int waterlevel; /* cm */
-  int rain; /* 0 : false, 1 : true */
+  float temp = 20.; /* celsius */
+  float hum = 70.; /* percentage */
+  int waterlevel = 0; /* cm */
+  int rain = 0; /* 0 : not raining, 1 : raining */
 } data;
 
 SemaphoreHandle_t mutex;
@@ -77,7 +77,7 @@ void setup()
   xTaskCreate( WaterLevelRainUpdate, "WaterLevelRainUpdate", 128, NULL, 1, NULL );
 
   /* output */
-  //xTaskCreate( LCDPrint, "LCDPrint", 128, NULL, 1, NULL );
+  xTaskCreate( LCDPrint, "LCDPrint", 128, NULL, 1, NULL );
   xTaskCreate( SEGPrint, "SEGPrint", 128, NULL, 1, NULL );
   //xTaskCreate( LEDBlink, "LEDBlink", 128, NULL, 1, NULL );
   
@@ -107,8 +107,8 @@ void TempHumUpdate( void *pvParameters )
     DHT11.read(DHT11PIN);
     temp = (float)DHT11.temperature;
     hum = (float)DHT11.humidity;
-    //temp = random(0, 50);
-    //hum = random(10, 90);
+    temp = random(0, 50);
+    hum = random(10, 90);
     
     if (xSemaphoreTake(mutex, 5) == pdTRUE)
     {
@@ -129,7 +129,7 @@ void TempHumUpdate( void *pvParameters )
 void WaterLevelRainUpdate( void *pvParameters )
 {
   int waterlevel, waterlevel_old = 0;
-  int rain = 0;
+  int rain;
 
   for (;;)
   {
@@ -140,6 +140,8 @@ void WaterLevelRainUpdate( void *pvParameters )
     if (waterlevel > waterlevel_old) rain = 1;
     else rain = 0;
     //rain = random(0, 2);
+
+    waterlevel_old = waterlevel;
     
     if (xSemaphoreTake(mutex, 5) == pdTRUE)
     {
@@ -147,8 +149,6 @@ void WaterLevelRainUpdate( void *pvParameters )
       data.waterlevel = waterlevel;
       xSemaphoreGive(mutex);
     }
-
-    waterlevel_old = waterlevel;
     
     vTaskDelay( WLRAINDELAY / portTICK_PERIOD_MS );
   }
