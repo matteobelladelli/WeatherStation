@@ -43,7 +43,7 @@ struct package
 {
   float temp = 20.; /* celsius */
   float hum = 70.; /* percentage */
-  int waterlevel = 0; /* cm */
+  int waterlevel = 0; /* mm or cm */
   int rain = 0; /* 0 : not raining, 1 : raining */
 } data;
 
@@ -209,9 +209,8 @@ void SEGPrint( void *pvParameters )
       xSemaphoreGive(mutex);
     }
 
-    /* cm conversion */
-    waterlevel = waterlevel / 100; 
-    /* only one digit available: 9+cm value is displayed as 9cm */
+    waterlevel = waterlevel; 
+    /* only one digit available: 9+mm value is displayed as 9mm */
     if (waterlevel >= 10) waterlevel = 9; 
     
     sevseg.setNumber(waterlevel);
