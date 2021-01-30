@@ -41,10 +41,10 @@ void LEDBlink( void *pvParameters );
 
 struct package
 {
-  float temp = 20.; /* celsius */
-  float hum = 70.; /* percentage */
-  int waterlevel = 0; /* mm or cm */
-  int rain = 0; /* 0 : not raining, 1 : raining */
+  float temp = 20.;   /* celsius */
+  float hum = 70.;    /* percentage */
+  int waterlevel = 0; /* integer to calculate millimeters */
+  bool rain = false;  /* false = not raining, true = raining */
 } data;
 
 SemaphoreHandle_t mutex;
@@ -77,7 +77,7 @@ void setup()
   xTaskCreate( WaterLevelRainUpdate, "WaterLevelRainUpdate", 128, NULL, 1, NULL );
 
   /* output */
-  xTaskCreate( LCDPrint, "LCDPrint", 128, NULL, 1, NULL );
+  //xTaskCreate( LCDPrint, "LCDPrint", 128, NULL, 1, NULL );
   xTaskCreate( SEGPrint, "SEGPrint", 128, NULL, 1, NULL );
   xTaskCreate( LEDBlink, "LEDBlink", 128, NULL, 1, NULL );
   
@@ -129,7 +129,7 @@ void TempHumUpdate( void *pvParameters )
 void WaterLevelRainUpdate( void *pvParameters )
 {
   int waterlevel, waterlevel_old = 0;
-  int rain;
+  bool rain;
 
   for (;;)
   {
@@ -137,8 +137,8 @@ void WaterLevelRainUpdate( void *pvParameters )
     waterlevel = random(1000);
 
     /* water level increase -> raining */
-    if (waterlevel > waterlevel_old) rain = 1;
-    else rain = 0;
+    if (waterlevel > waterlevel_old + 5) rain = true;
+    else rain = false;
     //rain = random(0, 2);
 
     waterlevel_old = waterlevel;
@@ -199,7 +199,7 @@ void LCDPrint( void *pvParameters )
  */
 void SEGPrint( void *pvParameters )
 {
-  int waterlevel;
+  int waterlevel, range;
 
   for (;;) 
   {
@@ -209,11 +209,17 @@ void SEGPrint( void *pvParameters )
       xSemaphoreGive(mutex);
     }
 
-    waterlevel = waterlevel; 
-    /* only one digit available: 9+mm value is displayed as 9mm */
-    if (waterlevel >= 10) waterlevel = 9; 
+    if (waterlevel <= 480) range = 0;                           /* 0mm */
+    else if (waterlevel > 480 && waterlevel <= 530) range = 1;  /* 0mm to 5mm */
+    else if (waterlevel > 530 && waterlevel <= 615) range = 2;  /* 5mm to 10mm */
+    else if (waterlevel > 615 && waterlevel <= 660) range = 3;  /* 10mm to 15mm */
+    else if (waterlevel > 660 && waterlevel <= 680) range = 4;  /* 15mm to 20mm */
+    else if (waterlevel > 680 && waterlevel <= 690) range = 5;  /* 20mm to 25mm */
+    else if (waterlevel > 690 && waterlevel <= 700) range = 6;  /* 25mm to 30mm */
+    else if (waterlevel > 700 && waterlevel <= 705) range = 7;  /* 30mm to 35mm */
+    else if (waterlevel > 705) range = 8;                       /* 35mm+ */
     
-    sevseg.setNumber(waterlevel);
+    sevseg.setNumber(range);
     sevseg.refreshDisplay();
     
     vTaskDelay( SEGDELAY / portTICK_PERIOD_MS );
@@ -227,7 +233,7 @@ void SEGPrint( void *pvParameters )
  */
 void LEDBlink( void *pvParameters )
 { 
-  int rain;
+  bool rain;
   
   for (;;) 
   {
@@ -237,7 +243,7 @@ void LEDBlink( void *pvParameters )
       xSemaphoreGive(mutex);
     }
 
-    if (rain == 1) digitalWrite(LEDPIN, HIGH);
+    if (rain == true) digitalWrite(LEDPIN, HIGH);
     else digitalWrite(LEDPIN, LOW);
     
     vTaskDelay( LEDDELAY / portTICK_PERIOD_MS );
