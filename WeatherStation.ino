@@ -1,4 +1,6 @@
 /*
+ * weather station
+ * ---------------
  * temperature : i2c lcd 1602 display
  * humidity : i2c lcd 1602 display
  * water level : 7-segment display
@@ -12,7 +14,7 @@
 #include <SevSeg.h>
 
 /* dht11 temperature and humidity module */
-#define DHT11PIN A0
+#define DHT11PIN 12
 dht11 DHT11;
 
 /* water level detection module */
@@ -73,25 +75,25 @@ void setup()
 
   mutex = xSemaphoreCreateMutex();
 
-  /* update */
+  /* update tasks */
   xTaskCreate( TempHumUpdate, "TempHumUpdate", 128, NULL, 1, NULL );
-  xTaskCreate( WaterLevelRainUpdate, "WaterLevelRainUpdate", 128, NULL, 1, NULL );
-
-  /* output */
+  //xTaskCreate( WaterLevelRainUpdate, "WaterLevelRainUpdate", 128, NULL, 1, NULL );
+  
+  /* output tasks */
   xTaskCreate( LCDPrint, "LCDPrint", 128, NULL, 1, NULL );
-  //xTaskCreate( SEGPrint, "SEGPrint", 128, NULL, 1, NULL );
+  xTaskCreate( SEGPrint, "SEGPrint", 128, NULL, 1, NULL );
   xTaskCreate( LEDBlink, "LEDBlink", 128, NULL, 1, NULL );
   
 }
 
 void loop()
 {
-  
+
 }
 
-// ----------------
-//      update
-// ----------------
+// --------------------------
+//      update functions
+// --------------------------
 
 /* 
  * input channel #1
@@ -137,8 +139,8 @@ void WaterLevelRainUpdate( void *pvParameters )
     waterlevel = analogRead(WLPIN);
     waterlevel = random(1000);
 
-    /* water level increase -> raining */
-    if (waterlevel > waterlevel_old + 5) rain = true;
+    /* increase in water level -> raining */
+    if (waterlevel > 480 && waterlevel > waterlevel_old + 5) rain = true;
     else rain = false;
     //rain = random(0, 2);
 
@@ -155,9 +157,9 @@ void WaterLevelRainUpdate( void *pvParameters )
   }
 }
 
-// ----------------
-//      output
-// ----------------
+// --------------------------
+//      output functions
+// --------------------------
 
 /* 
  * output channel #1
@@ -166,7 +168,7 @@ void WaterLevelRainUpdate( void *pvParameters )
  */
 void LCDPrint( void *pvParameters )
 { 
-  /* initial delay to allow the sensor to collect data before displaying them */
+  /* initial delay to allow the sensor to collect initial data before displaying them */
   vTaskDelay( INITDELAY / portTICK_PERIOD_MS );
   
   int temp, hum;
