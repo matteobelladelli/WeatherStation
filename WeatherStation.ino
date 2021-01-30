@@ -1,10 +1,12 @@
-/*
- * weather station
- * ---------------
- * temperature : i2c lcd 1602 display
- * humidity : i2c lcd 1602 display
- * water level : 7-segment display
- * rain : led
+/* 
+ * -------------------------
+ *      weather station
+ * -------------------------
+ * 
+ * .temperature : i2c lcd 1602 display
+ * .humidity : i2c lcd 1602 display
+ * .water level : 7-segment display
+ * .rain : led
  */
 
 #include <LiquidCrystal_I2C.h>
@@ -76,13 +78,13 @@ void setup()
   mutex = xSemaphoreCreateMutex();
 
   /* update tasks */
-  xTaskCreate( TempHumUpdate, "TempHumUpdate", 128, NULL, 1, NULL );
-  xTaskCreate( WaterLevelRainUpdate, "WaterLevelRainUpdate", 128, NULL, 1, NULL );
+  xTaskCreate( TempHumUpdate, "TempHumUpdate", 64, NULL, 1, NULL );
+  xTaskCreate( WaterLevelRainUpdate, "WaterLevelRainUpdate", 64, NULL, 1, NULL );
   
   /* output tasks */
-  //xTaskCreate( LCDPrint, "LCDPrint", 128, NULL, 1, NULL );
-  xTaskCreate( SEGPrint, "SEGPrint", 128, NULL, 1, NULL );
-  xTaskCreate( LEDBlink, "LEDBlink", 128, NULL, 1, NULL );
+  xTaskCreate( LCDPrint, "LCDPrint", 128, NULL, 1, NULL );
+  xTaskCreate( SEGPrint, "SEGPrint", 64, NULL, 1, NULL );
+  xTaskCreate( LEDBlink, "LEDBlink", 64, NULL, 1, NULL );
   
 }
 
