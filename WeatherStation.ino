@@ -77,10 +77,10 @@ void setup()
 
   /* update tasks */
   xTaskCreate( TempHumUpdate, "TempHumUpdate", 128, NULL, 1, NULL );
-  //xTaskCreate( WaterLevelRainUpdate, "WaterLevelRainUpdate", 128, NULL, 1, NULL );
+  xTaskCreate( WaterLevelRainUpdate, "WaterLevelRainUpdate", 128, NULL, 1, NULL );
   
   /* output tasks */
-  xTaskCreate( LCDPrint, "LCDPrint", 128, NULL, 1, NULL );
+  //xTaskCreate( LCDPrint, "LCDPrint", 128, NULL, 1, NULL );
   xTaskCreate( SEGPrint, "SEGPrint", 128, NULL, 1, NULL );
   xTaskCreate( LEDBlink, "LEDBlink", 128, NULL, 1, NULL );
   
