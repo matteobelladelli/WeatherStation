@@ -9,9 +9,9 @@
  * .rain : led
  */
 
-#include <LiquidCrystal_I2C.h>
 #include <Arduino_FreeRTOS.h>
 #include <semphr.h>
+#include <LiquidCrystal_I2C.h>
 #include <dht11.h>
 #include <SevSeg.h>
 
