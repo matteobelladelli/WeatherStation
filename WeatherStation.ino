@@ -1,13 +1,14 @@
-/* 
- * -------------------------
- *      weather station
- * -------------------------
- * 
- * .temperature : i2c lcd 1602 display
- * .humidity : i2c lcd 1602 display
- * .water level : 7-segment display
- * .rain : led
- */
+/*
+   -------------------------
+        weather station
+   -------------------------
+
+   temperature : dht11 module -> i2c lcd 1602 display
+   humidity : dht11 module -> i2c lcd 1602 display
+   water level : water detection module -> 7-segment display
+   rain : water detection module -> led
+   all : button -> serial monitor
+*/
 
 #include <Arduino_FreeRTOS.h>
 #include <semphr.h>
@@ -16,7 +17,7 @@
 #include <SevSeg.h>
 
 /* dht11 temperature and humidity module */
-#define DHT11PIN 12
+#define DHTPIN 12
 dht11 DHT11;
 
 /* water level detection module */
@@ -26,13 +27,17 @@ dht11 DHT11;
 LiquidCrystal_I2C lcd(0x3f, 16, 2);
 
 /* 7-segment display */
-SevSeg sevseg; 
+SevSeg sevseg;
 
 /* led */
 #define LEDPIN 13
 
-#define TEMPHUMDELAY 5000 /* temperature and humidity values update period */
-#define WLRAINDELAY 10000 /* water level and rain values update period*/
+/* button */
+#define BUTTONPIN 11
+int buttonState;
+
+#define DHTDELAY 5000 /* temperature and humidity values update period */
+#define WLDELAY 10000 /* water level and rain values update period*/
 #define LCDDELAY 5000     /* i2c lcd 1602 display print period */
 #define SEGDELAY 10000    /* 7-segment display print period */
 #define LEDDELAY 10000    /* led blink period */
@@ -68,19 +73,23 @@ void setup()
   byte digitPins[] = {};
   byte segmentPins[] = {6, 5, 2, 3, 4, 7, 8, 9};
   bool resistorsOnSegments = true;
-  byte hardwareConfig = COMMON_CATHODE; 
+  byte hardwareConfig = COMMON_CATHODE;
   sevseg.begin(hardwareConfig, numDigits, digitPins, segmentPins, resistorsOnSegments);
   sevseg.setBrightness(90);
 
   /* led */
   pinMode(LEDPIN, OUTPUT);
 
+  /* button */
+  pinMode(BUTTONPIN, OUTPUT);
+  buttonState = 0;
+
   mutex = xSemaphoreCreateMutex();
 
   /* update tasks */
-  xTaskCreate( TempHumUpdate, "TempHumUpdate", 64, NULL, 1, NULL );
-  xTaskCreate( WaterLevelRainUpdate, "WaterLevelRainUpdate", 64, NULL, 1, NULL );
-  
+  xTaskCreate( TempHumUpdate, "TempHumUpdate", 64, NULL, 2, NULL );
+  xTaskCreate( WaterLevelRainUpdate, "WaterLevelRainUpdate", 64, NULL, 2, NULL );
+
   /* output tasks */
   xTaskCreate( LCDPrint, "LCDPrint", 128, NULL, 1, NULL );
   xTaskCreate( SEGPrint, "SEGPrint", 64, NULL, 1, NULL );
@@ -97,24 +106,24 @@ void loop()
 //      update functions
 // --------------------------
 
-/* 
- * input channel #1
- * dht11 temperature and humidity module
- * [temperature, humidity]
- */
+/*
+   input channel #1
+   dht11 temperature and humidity module
+   [temperature, humidity]
+*/
 void TempHumUpdate( void *pvParameters )
-{ 
+{
   float temp;
   float hum;
 
   for (;;)
   {
-    DHT11.read(DHT11PIN);
+    DHT11.read(DHTPIN);
     temp = (float)DHT11.temperature;
     hum = (float)DHT11.humidity;
     temp = random(0, 50);
     hum = random(10, 90);
-    
+
     if (xSemaphoreTake(mutex, 5) == pdTRUE)
     {
       data.temp = temp;
@@ -122,15 +131,15 @@ void TempHumUpdate( void *pvParameters )
       xSemaphoreGive(mutex);
     }
 
-    vTaskDelay( TEMPHUMDELAY / portTICK_PERIOD_MS );
+    vTaskDelay( DHTDELAY / portTICK_PERIOD_MS );
   }
 }
 
-/* 
- * input channel #2
- * water level detection module
- * [rain]
- */
+/*
+   input channel #2
+   water level detection module
+   [rain]
+*/
 void WaterLevelRainUpdate( void *pvParameters )
 {
   int waterlevel, waterlevel_old = 0;
@@ -147,15 +156,15 @@ void WaterLevelRainUpdate( void *pvParameters )
     //rain = random(0, 2);
 
     waterlevel_old = waterlevel;
-    
+
     if (xSemaphoreTake(mutex, 5) == pdTRUE)
     {
       data.rain = rain;
       data.waterlevel = waterlevel;
       xSemaphoreGive(mutex);
     }
-    
-    vTaskDelay( WLRAINDELAY / portTICK_PERIOD_MS );
+
+    vTaskDelay( WLDELAY / portTICK_PERIOD_MS );
   }
 }
 
@@ -163,56 +172,56 @@ void WaterLevelRainUpdate( void *pvParameters )
 //      output functions
 // --------------------------
 
-/* 
- * output channel #1
- * i2c lcd 1602 display
- * [temperature, humidity]
- */
+/*
+   output channel #1
+   i2c lcd 1602 display
+   [temperature, humidity]
+*/
 void LCDPrint( void *pvParameters )
-{ 
+{
   /* initial delay to allow the sensor to collect initial data before displaying them */
   vTaskDelay( INITDELAY / portTICK_PERIOD_MS );
-  
+
   int temp, hum;
-  
-  for (;;) 
-  { 
+
+  for (;;)
+  {
     if (xSemaphoreTake(mutex, 5) == pdTRUE)
     {
       temp = data.temp;
       hum = data.hum;
       xSemaphoreGive(mutex);
     }
-      
+
     lcd.clear();
 
     lcd.setCursor(0, 0);
     lcd.print("TEMP: ");
     lcd.print(temp);
     lcd.print("C");
-    
+
     lcd.setCursor(0, 1);
     lcd.print("HUM: ");
     lcd.print(hum);
     lcd.print("%");
-    
+
     vTaskDelay( LCDDELAY / portTICK_PERIOD_MS );
   }
 }
 
-/* 
- * output channel #2
- * 7-segment display
- * [water level]
- */
+/*
+   output channel #2
+   7-segment display
+   [water level]
+*/
 void SEGPrint( void *pvParameters )
 {
   vTaskDelay( INITDELAY / portTICK_PERIOD_MS );
-  
+
   int waterlevel;
   int range;
 
-  for (;;) 
+  for (;;)
   {
     if (xSemaphoreTake(mutex, 5) == pdTRUE)
     {
@@ -229,26 +238,26 @@ void SEGPrint( void *pvParameters )
     else if (waterlevel > 690 && waterlevel <= 700) range = 6;  /* 25mm+ to 30mm */
     else if (waterlevel > 700 && waterlevel <= 705) range = 7;  /* 30mm+ to 35mm */
     else if (waterlevel > 705) range = 8;                       /* 35mm+ */
-    
+
     sevseg.setNumber(range);
     sevseg.refreshDisplay();
-    
+
     vTaskDelay( SEGDELAY / portTICK_PERIOD_MS );
   }
 }
 
-/* 
- * output channel #3
- * led
- * [rain]
- */
+/*
+   output channel #3
+   led
+   [rain]
+*/
 void LEDBlink( void *pvParameters )
 {
   vTaskDelay( INITDELAY / portTICK_PERIOD_MS );
-  
+
   boolean rain;
-  
-  for (;;) 
+
+  for (;;)
   {
     if (xSemaphoreTake(mutex, 5) == pdTRUE)
     {
@@ -258,7 +267,7 @@ void LEDBlink( void *pvParameters )
 
     if (rain == true) digitalWrite(LEDPIN, HIGH);
     else digitalWrite(LEDPIN, LOW);
-    
+
     vTaskDelay( LEDDELAY / portTICK_PERIOD_MS );
   }
 }
