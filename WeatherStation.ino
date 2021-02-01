@@ -7,7 +7,7 @@
    humidity : dht11 module -> i2c lcd 1602 display
    water level : water detection module -> 7-segment display
    rain : water detection module -> led
-   all : button -> serial monitor
+   button to show/hide all output informations
 */
 
 #include <Arduino_FreeRTOS.h>
@@ -33,18 +33,20 @@ SevSeg sevseg;
 #define LEDPIN 13
 
 /* button */
-#define BUTTONPIN 11
-int buttonState;
+#define BTNPIN 11
+#define BTNNOTPRESSED 0
+#define BTNPRESSED 1
 
-#define DHTDELAY 5000 /* temperature and humidity values update period */
-#define WLDELAY 10000 /* water level and rain values update period*/
-#define LCDDELAY 5000     /* i2c lcd 1602 display print period */
-#define SEGDELAY 10000    /* 7-segment display print period */
-#define LEDDELAY 10000    /* led blink period */
-#define INITDELAY 2000    /* initial delay of the output channels */
+#define DHTDELAY 5000   /* temperature and humidity values update period */
+#define WLDELAY 10000   /* water level and rain values update period*/
+#define LCDDELAY 5000   /* i2c lcd 1602 display print period */
+#define SEGDELAY 10000  /* 7-segment display print period */
+#define LEDDELAY 10000  /* led blink period */
+#define INITDELAY 0     /* initial delay of the output channels */
 
-void TempHumUpdate( void *pvParameters );
-void WaterLevelRainUpdate( void *pvParameters );
+void DHTUpdate( void *pvParameters );
+void WLUpdate( void *pvParameters );
+void ButtonRead( void *pvParameters );
 void LCDPrint( void *pvParameters );
 void SEGPrint( void *pvParameters );
 void LEDBlink( void *pvParameters );
@@ -81,14 +83,14 @@ void setup()
   pinMode(LEDPIN, OUTPUT);
 
   /* button */
-  pinMode(BUTTONPIN, OUTPUT);
-  buttonState = 0;
+  pinMode(BTNPIN, OUTPUT);
 
   mutex = xSemaphoreCreateMutex();
 
   /* update tasks */
-  xTaskCreate( TempHumUpdate, "TempHumUpdate", 64, NULL, 2, NULL );
-  xTaskCreate( WaterLevelRainUpdate, "WaterLevelRainUpdate", 64, NULL, 2, NULL );
+  xTaskCreate( DHTUpdate, "DHTUpdate", 64, NULL, 2, NULL );
+  xTaskCreate( WLUpdate, "WLUpdate", 64, NULL, 2, NULL );
+  xTaskCreate( ButtonRead, "ButtonRead", 64, NULL, 2, NULL );
 
   /* output tasks */
   xTaskCreate( LCDPrint, "LCDPrint", 128, NULL, 1, NULL );
@@ -111,7 +113,7 @@ void loop()
    dht11 temperature and humidity module
    [temperature, humidity]
 */
-void TempHumUpdate( void *pvParameters )
+void DHTUpdate( void *pvParameters )
 {
   float temp;
   float hum;
@@ -140,7 +142,7 @@ void TempHumUpdate( void *pvParameters )
    water level detection module
    [rain]
 */
-void WaterLevelRainUpdate( void *pvParameters )
+void WLUpdate( void *pvParameters )
 {
   int waterlevel, waterlevel_old = 0;
   boolean rain;
@@ -165,6 +167,28 @@ void WaterLevelRainUpdate( void *pvParameters )
     }
 
     vTaskDelay( WLDELAY / portTICK_PERIOD_MS );
+  }
+}
+
+/*
+   input channel #3
+   button
+*/
+void ButtonRead( void *pvParameters )
+{
+  uint8_t curr_state, prev_state = BTNNOTPRESSED;
+  const TickType_t sample_interval = 20 / portTICK_PERIOD_MS;
+  TickType_t last_wake_time = xTaskGetTickCount();
+
+  for (;;)
+  {
+    vTaskDelayUntil( &last_wake_time, sample_interval ); 
+    curr_state = digitalRead(BTNPIN);
+    if ((curr_state == BTNPRESSED) && (prev_state == BTNNOTPRESSED)) 
+    {
+
+    }
+    prev_state = curr_state;
   }
 }
 
