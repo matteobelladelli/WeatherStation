@@ -7,7 +7,6 @@
    humidity : dht11 module -> i2c lcd 1602 display
    water level : water detection module -> 7-segment display
    rain : water detection module -> led
-   button to show/hide all output informations
 */
 
 #include <Arduino_FreeRTOS.h>
@@ -42,7 +41,7 @@ SevSeg sevseg;
 #define LCDDELAY 5000   /* i2c lcd 1602 display print period */
 #define SEGDELAY 10000  /* 7-segment display print period */
 #define LEDDELAY 10000  /* led blink period */
-#define INITDELAY 0     /* initial delay of the output channels */
+#define INITDELAY 2000  /* initial delay of the output channels */
 
 void DHTUpdate( void *pvParameters );
 void WLUpdate( void *pvParameters );
@@ -55,7 +54,7 @@ struct package
 {
   float temp;     /* celsius */
   float hum;      /* percentage */
-  int waterlevel; /* integer to be converted into millimeters */
+  int waterlevel; /* integer to be converted into a millimeter range */
   boolean rain;   /* boolean */
 } data;
 
@@ -90,7 +89,7 @@ void setup()
   /* update tasks */
   xTaskCreate( DHTUpdate, "DHTUpdate", 64, NULL, 2, NULL );
   xTaskCreate( WLUpdate, "WLUpdate", 64, NULL, 2, NULL );
-  xTaskCreate( ButtonRead, "ButtonRead", 64, NULL, 2, NULL );
+  //xTaskCreate( ButtonRead, "ButtonRead", 64, NULL, 2, NULL );
 
   /* output tasks */
   xTaskCreate( LCDPrint, "LCDPrint", 128, NULL, 1, NULL );
