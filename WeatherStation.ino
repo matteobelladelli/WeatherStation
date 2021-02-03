@@ -32,9 +32,9 @@ SevSeg sevseg;
 #define LEDPIN 13
 
 /* button */
-#define BTNPIN 11
-#define BTNNOTPRESSED 0
-#define BTNPRESSED 1
+//#define BTNPIN 11
+//#define BTNNOTPRESSED 0
+//#define BTNPRESSED 1
 
 #define DHTDELAY 5000   /* temperature and humidity values update period */
 #define WLDELAY 10000   /* water level and rain values update period*/
@@ -45,7 +45,7 @@ SevSeg sevseg;
 
 void DHTUpdate( void *pvParameters );
 void WLUpdate( void *pvParameters );
-void ButtonRead( void *pvParameters );
+//void ButtonRead( void *pvParameters );
 void LCDPrint( void *pvParameters );
 void SEGPrint( void *pvParameters );
 void LEDBlink( void *pvParameters );
@@ -82,7 +82,7 @@ void setup()
   pinMode(LEDPIN, OUTPUT);
 
   /* button */
-  pinMode(BTNPIN, OUTPUT);
+  //pinMode(BTNPIN, OUTPUT);
 
   mutex = xSemaphoreCreateMutex();
 
@@ -173,23 +173,23 @@ void WLUpdate( void *pvParameters )
    input channel #3
    button
 */
-void ButtonRead( void *pvParameters )
-{
-  uint8_t curr_state, prev_state = BTNNOTPRESSED;
-  const TickType_t sample_interval = 20 / portTICK_PERIOD_MS;
-  TickType_t last_wake_time = xTaskGetTickCount();
-
-  for (;;)
-  {
-    vTaskDelayUntil( &last_wake_time, sample_interval ); 
-    curr_state = digitalRead(BTNPIN);
-    if ((curr_state == BTNPRESSED) && (prev_state == BTNNOTPRESSED)) 
-    {
-
-    }
-    prev_state = curr_state;
-  }
-}
+//void ButtonRead( void *pvParameters )
+//{
+//  uint8_t curr_state, prev_state = BTNNOTPRESSED;
+//  const TickType_t sample_interval = 20 / portTICK_PERIOD_MS;
+//  TickType_t last_wake_time = xTaskGetTickCount();
+//
+//  for (;;)
+//  {
+//    vTaskDelayUntil( &last_wake_time, sample_interval ); 
+//    curr_state = digitalRead(BTNPIN);
+//    if ((curr_state == BTNPRESSED) && (prev_state == BTNNOTPRESSED)) 
+//    {
+//
+//    }
+//    prev_state = curr_state;
+//  }
+//}
 
 // --------------------------
 //      output functions
