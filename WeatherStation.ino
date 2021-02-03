@@ -24,7 +24,7 @@ dht11 DHT11;
 #define WLPIN A1
 
 /* ldr */
-#define LDRPIN A0
+#define LDRPIN A0 
 #define LDRMAX 1023
 #define LDRMIN 0
 
