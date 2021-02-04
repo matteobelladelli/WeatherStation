@@ -1,14 +1,14 @@
 /*
-   -------------------------
-        weather station
-   -------------------------
-
-   temperature : dht11 module -> i2c lcd 1602 display
-   humidity : dht11 module -> i2c lcd 1602 display
-   water level : water level detection module -> 7-segment display
-   rain : water detection module -> led
-   light : ldr -> i2c lcd 1602 display
-*/
+ *  -------------------------
+ *       weather station
+ *  -------------------------
+ *
+ *  temperature : dht11 module -> i2c lcd 1602 display
+ *  humidity : dht11 module -> i2c lcd 1602 display
+ *  water level : water level detection module -> 7-segment display
+ *  rain : water detection module -> led
+ *  light : ldr -> i2c lcd 1602 display
+ */
 
 #include <Arduino_FreeRTOS.h>
 #include <semphr.h>
