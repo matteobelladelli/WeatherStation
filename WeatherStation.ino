@@ -249,6 +249,7 @@ void LCDPrint( void *pvParameters )
       lcd.setCursor(0, 0);
       lcd.print("TEMP: ");
       lcd.print(temp);
+      lcd.print((char)223);
       lcd.print("C");
   
       lcd.setCursor(0, 1);
