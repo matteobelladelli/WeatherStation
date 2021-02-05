@@ -305,15 +305,16 @@ void SEGPrint( void *pvParameters )
     }
 
     /* range conversion */
-    if (waterlevel <= 480) range = 0;                           /* 0mm */
-    else if (waterlevel > 480 && waterlevel <= 530) range = 1;  /* 0mm+ to 5mm */
-    else if (waterlevel > 530 && waterlevel <= 615) range = 2;  /* 5mm+ to 10mm */
-    else if (waterlevel > 615 && waterlevel <= 660) range = 3;  /* 10mm+ to 15mm */
-    else if (waterlevel > 660 && waterlevel <= 680) range = 4;  /* 15mm+ to 20mm */
-    else if (waterlevel > 680 && waterlevel <= 690) range = 5;  /* 20mm+ to 25mm */
-    else if (waterlevel > 690 && waterlevel <= 700) range = 6;  /* 25mm+ to 30mm */
-    else if (waterlevel > 700 && waterlevel <= 705) range = 7;  /* 30mm+ to 35mm */
-    else if (waterlevel > 705) range = 8;                       /* 35mm+ */
+    if (waterlevel <= 5) range = 0;                           /* 0mm */
+    else if (waterlevel > 5 && waterlevel <= 15) range = 1;   /* 0+mm to 5mm */
+    else if (waterlevel > 15 && waterlevel <= 25) range = 2;  /* 5+mm to 10mm */
+    else if (waterlevel > 25 && waterlevel <= 35) range = 3;  /* 10+mm to 15mm */
+    else if (waterlevel > 35 && waterlevel <= 45) range = 4;  /* 15+mm to 20mm */
+    else if (waterlevel > 45 && waterlevel <= 55) range = 5;  /* 20+mm to 25mm */
+    else if (waterlevel > 55 && waterlevel <= 65) range = 6;  /* 25+mm to 30mm */
+    else if (waterlevel > 65 && waterlevel <= 75) range = 7;  /* 30+mm to 35mm */
+    else if (waterlevel > 75 && waterlevel <= 85) range = 8;  /* 35+mm to 40mm */
+    else if (waterlevel > 85) range = 9;                      /* 40+mm */
 
     sevseg.setNumber(range);
     sevseg.refreshDisplay();
