@@ -170,7 +170,7 @@ void WLUpdate( void *pvParameters )
     //waterlevel = random(1000);
 
     /* increase in water level -> raining */
-    if (waterlevel > 480 && waterlevel > waterlevel_old + 5) rain = true;
+    if (waterlevel > 10 && waterlevel > waterlevel_old) rain = true;
     else rain = false;
     //rain = random(0, 2);
 
