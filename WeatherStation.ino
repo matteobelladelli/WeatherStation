@@ -23,15 +23,15 @@ dht11 DHT11;
 /* water level detection module */
 #define WLPIN A1
 /* water level range boundaries, real value conversions in segprint function */
-#define WL0 10
-#define WL1 20
-#define WL2 30
-#define WL3 40
-#define WL4 50
-#define WL5 60
-#define WL6 70
-#define WL7 80
-#define WL8 90
+#define WL0 15
+#define WL1 25
+#define WL2 35
+#define WL3 45
+#define WL4 55
+#define WL5 65
+#define WL6 75
+#define WL7 85
+#define WL8 95
 
 /* ldr */
 #define LDRPIN A0 
@@ -47,17 +47,13 @@ SevSeg sevseg;
 /* led */
 #define LEDPIN 13
 
-/* button */
-//#define BTNPIN 11
-//#define BTNNOTPRESSED 0
-//#define BTNPRESSED 1
-
+/* task periods */
 #define DHTDELAY 10000  /* temperature and humidity values update period */
 #define WLDELAY 10000   /* water level and rain values update period*/
 #define LDRDELAY 10000  /* light percentage value update period */
 #define LCDDELAY 5000   /* i2c lcd 1602 display print period */
 #define SEGDELAY 10000  /* 7-segment display print period */
-#define LEDDELAY 10000  /* led blink period */
+#define LEDDELAY 50000  /* led blink period */
 #define INITDELAY 2000  /* initial delay of the output channels */
 
 void DHTUpdate( void *pvParameters );
@@ -66,18 +62,34 @@ void LDRUpdate( void *pvParameters );
 void LCDPrint( void *pvParameters );
 void SEGPrint( void *pvParameters );
 void LEDBlink( void *pvParameters );
-//void ButtonRead( void *pvParameters );
 
-struct package
+// -------------------------------------
+//      data structures and mutexes
+// -------------------------------------
+
+struct package_temphum
 {
   float temp;     /* celsius */
   float hum;      /* percentage */
-  int waterlevel; /* integer to be converted into a millimeter range */
-  boolean rain;   /* boolean */
-  int light;      /* integer to be converted into a percentage */
-} data;
+} data_temphum;
+SemaphoreHandle_t mutex_temphum;
 
-SemaphoreHandle_t mutex;
+struct package_wl
+{
+  int waterlevel; /* integer to be converted into a millimeter range */
+  boolean rain;   /* boolean */  
+} data_wl;
+SemaphoreHandle_t mutex_wl;
+
+struct package_light
+{
+  int light;      /* integer to be converted into a percentage */
+} data_light;
+SemaphoreHandle_t mutex_light;
+
+// ---------------
+//      setup
+// ---------------
 
 void setup()
 {
@@ -109,10 +121,9 @@ void setup()
   /* led */
   pinMode(LEDPIN, OUTPUT);
 
-  /* button */
-  //pinMode(BTNPIN, OUTPUT);
-
-  mutex = xSemaphoreCreateMutex();
+  mutex_temphum = xSemaphoreCreateMutex();
+  mutex_wl= xSemaphoreCreateMutex();
+  mutex_light = xSemaphoreCreateMutex();
 
   /* update tasks */
   xTaskCreate( DHTUpdate, "DHTUpdate", 64, NULL, 2, NULL );
@@ -122,9 +133,7 @@ void setup()
   /* output tasks */
   xTaskCreate( LCDPrint, "LCDPrint", 128, NULL, 1, NULL );
   xTaskCreate( SEGPrint, "SEGPrint", 64, NULL, 1, NULL );
-  xTaskCreate( LEDBlink, "LEDBlink", 64, NULL, 1, NULL );
-
-  //xTaskCreate( ButtonRead, "ButtonRead", 64, NULL, 2, NULL );
+  xTaskCreate( LEDBlink, "LEDBlink", 48, NULL, 1, NULL );
   
 }
 
@@ -152,11 +161,11 @@ void DHTUpdate( void *pvParameters )
     //temp = random(0, 50);
     //hum = random(10, 90);
 
-    if (xSemaphoreTake(mutex, 5) == pdTRUE)
+    if (xSemaphoreTake(mutex_temphum, 5) == pdTRUE)
     {
-      data.temp = temp;
-      data.hum = hum;
-      xSemaphoreGive(mutex);
+      data_temphum.temp = temp;
+      data_temphum.hum = hum;
+      xSemaphoreGive(mutex_temphum);
     }
 
     vTaskDelay( DHTDELAY / portTICK_PERIOD_MS );
@@ -171,7 +180,7 @@ void DHTUpdate( void *pvParameters )
 void WLUpdate( void *pvParameters )
 {
   int waterlevel;
-  int waterlevel_old = 0;
+  int waterlevel_old = WL0;
   boolean rain;
 
   for (;;)
@@ -186,11 +195,11 @@ void WLUpdate( void *pvParameters )
 
     waterlevel_old = waterlevel;
 
-    if (xSemaphoreTake(mutex, 5) == pdTRUE)
+    if (xSemaphoreTake(mutex_wl, 5) == pdTRUE)
     {
-      data.rain = rain;
-      data.waterlevel = waterlevel;
-      xSemaphoreGive(mutex);
+      data_wl.rain = rain;
+      data_wl.waterlevel = waterlevel;
+      xSemaphoreGive(mutex_wl);
     }
 
     vTaskDelay( WLDELAY / portTICK_PERIOD_MS );
@@ -211,10 +220,10 @@ void LDRUpdate( void *pvParameters )
     light = analogRead(LDRPIN);
     //light = random(0, 1024);
 
-    if (xSemaphoreTake(mutex, 5) == pdTRUE)
+    if (xSemaphoreTake(mutex_light, 5) == pdTRUE)
     {
-      data.light = light;
-      xSemaphoreGive(mutex);
+      data_light.light = light;
+      xSemaphoreGive(mutex_light);
     }
 
     vTaskDelay( LDRDELAY / portTICK_PERIOD_MS );
@@ -247,11 +256,11 @@ void LCDPrint( void *pvParameters )
     /* temperature and humidity */
     if (iteration == 0)
     {
-      if (xSemaphoreTake(mutex, 5) == pdTRUE)
+      if (xSemaphoreTake(mutex_temphum, 5) == pdTRUE)
       {
-        temp = data.temp;
-        hum = data.hum;
-        xSemaphoreGive(mutex);
+        temp = data_temphum.temp;
+        hum = data_temphum.hum;
+        xSemaphoreGive(mutex_temphum);
       }
   
       lcd.clear();
@@ -271,10 +280,10 @@ void LCDPrint( void *pvParameters )
     /* light */
     else
     {
-      if (xSemaphoreTake(mutex, 5) == pdTRUE)
+      if (xSemaphoreTake(mutex_light, 5) == pdTRUE)
       {
-        light = data.light;
-        xSemaphoreGive(mutex);
+        light = data_light.light;
+        xSemaphoreGive(mutex_light);
       }
       
       /* percentage conversion */
@@ -308,10 +317,10 @@ void SEGPrint( void *pvParameters )
 
   for (;;)
   {
-    if (xSemaphoreTake(mutex, 5) == pdTRUE)
+    if (xSemaphoreTake(mutex_wl, 5) == pdTRUE)
     {
-      waterlevel = data.waterlevel;
-      xSemaphoreGive(mutex);
+      waterlevel = data_wl.waterlevel;
+      xSemaphoreGive(mutex_wl);
     }
 
     /* range conversion */
@@ -346,10 +355,10 @@ void LEDBlink( void *pvParameters )
 
   for (;;)
   {
-    if (xSemaphoreTake(mutex, 5) == pdTRUE)
+    if (xSemaphoreTake(mutex_wl, 5) == pdTRUE)
     {
-      rain = data.rain;
-      xSemaphoreGive(mutex);
+      rain = data_wl.rain;
+      xSemaphoreGive(mutex_wl);
     }
 
     if (rain == true) digitalWrite(LEDPIN, HIGH);
@@ -358,24 +367,3 @@ void LEDBlink( void *pvParameters )
     vTaskDelay( LEDDELAY / portTICK_PERIOD_MS );
   }
 }
-
-/*
-   button
-*/
-//void ButtonRead( void *pvParameters )
-//{
-//  uint8_t curr_state, prev_state = BTNNOTPRESSED;
-//  const TickType_t sample_interval = 20 / portTICK_PERIOD_MS;
-//  TickType_t last_wake_time = xTaskGetTickCount();
-//
-//  for (;;)
-//  {
-//    vTaskDelayUntil( &last_wake_time, sample_interval ); 
-//    curr_state = digitalRead(BTNPIN);
-//    if ((curr_state == BTNPRESSED) && (prev_state == BTNNOTPRESSED)) 
-//    {
-//
-//    }
-//    prev_state = curr_state;
-//  }
-//}
