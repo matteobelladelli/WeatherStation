@@ -56,6 +56,7 @@ SevSeg sevseg;
 #define LEDDELAY 10000  /* led blink period */
 #define INITDELAY 2000  /* initial delay of the output channels */
 
+/* task functions */
 void DHTUpdate( void *pvParameters );
 void WLUpdate( void *pvParameters );
 void LDRUpdate( void *pvParameters );
