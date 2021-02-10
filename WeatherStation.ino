@@ -53,7 +53,7 @@ SevSeg sevseg;
 #define LDRDELAY 10000  /* light percentage value update period */
 #define LCDDELAY 5000   /* i2c lcd 1602 display print period */
 #define SEGDELAY 10000  /* 7-segment display print period */
-#define LEDDELAY 50000  /* led blink period */
+#define LEDDELAY 10000  /* led blink period */
 #define INITDELAY 2000  /* initial delay of the output channels */
 
 void DHTUpdate( void *pvParameters );
@@ -180,7 +180,7 @@ void DHTUpdate( void *pvParameters )
 void WLUpdate( void *pvParameters )
 {
   int waterlevel;
-  int waterlevel_old = WL0;
+  int waterlevel_old = WL8;
   boolean rain;
 
   for (;;)
