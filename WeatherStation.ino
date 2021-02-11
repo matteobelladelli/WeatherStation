@@ -48,11 +48,11 @@ SevSeg sevseg;
 #define LEDPIN 13
 
 /* task periods */
-#define DHTDELAY 10000  /* temperature and humidity values update period */
-#define WLDELAY 10000   /* water level and rain values update period*/
-#define LDRDELAY 10000  /* light percentage value update period */
-#define LCDDELAY 5000   /* i2c lcd 1602 display print period */
-#define SEGDELAY 10000  /* 7-segment display print period */
+#define DHTDELAY 2000  /* temperature and humidity values update period */
+#define WLDELAY 2000   /* water level and rain values update period*/
+#define LDRDELAY 2000  /* light percentage value update period */
+#define LCDDELAY 2000   /* i2c lcd 1602 display print period */
+#define SEGDELAY 2000  /* 7-segment display print period */
 #define LEDDELAY 10000  /* led blink period */
 #define INITDELAY 2000  /* initial delay of the output channels */
 
@@ -77,8 +77,7 @@ SemaphoreHandle_t mutex_temphum;
 
 struct package_wl
 {
-  int waterlevel; /* integer to be converted into a millimeter range */
-  boolean rain;   /* boolean */  
+  int waterlevel; /* integer to be converted into a millimeter range */ 
 } data_wl;
 SemaphoreHandle_t mutex_wl;
 
@@ -181,24 +180,14 @@ void DHTUpdate( void *pvParameters )
 void WLUpdate( void *pvParameters )
 {
   int waterlevel;
-  int waterlevel_old = WL8;
-  boolean rain;
 
   for (;;)
   {
     waterlevel = analogRead(WLPIN);
-    //waterlevel = random(1000);
-
-    /* increase in water level -> raining */
-    if (waterlevel > WL0 && waterlevel > waterlevel_old) rain = true;
-    else rain = false;
-    //rain = random(0, 2);
-
-    waterlevel_old = waterlevel;
+    //waterlevel = random(100);
 
     if (xSemaphoreTake(mutex_wl, 5) == pdTRUE)
     {
-      data_wl.rain = rain;
       data_wl.waterlevel = waterlevel;
       xSemaphoreGive(mutex_wl);
     }
@@ -352,15 +341,22 @@ void LEDBlink( void *pvParameters )
 {
   vTaskDelay( INITDELAY / portTICK_PERIOD_MS );
 
+  int waterlevel;
+  int waterlevel_old = WL8;
   boolean rain;
 
   for (;;)
   {
     if (xSemaphoreTake(mutex_wl, 5) == pdTRUE)
     {
-      rain = data_wl.rain;
+      waterlevel = data_wl.waterlevel;
       xSemaphoreGive(mutex_wl);
     }
+
+    /* increase in water level -> raining */
+    if (waterlevel > WL0 && waterlevel > waterlevel_old) rain = true;
+    else rain = false;
+    waterlevel_old = waterlevel;
 
     if (rain == true) digitalWrite(LEDPIN, HIGH);
     else digitalWrite(LEDPIN, LOW);
