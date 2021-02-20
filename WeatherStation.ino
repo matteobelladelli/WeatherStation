@@ -73,18 +73,19 @@ struct package_temphum
   float temp;     /* celsius */
   float hum;      /* percentage */
 } data_temphum;
-SemaphoreHandle_t mutex_temphum;
 
 struct package_wl
 {
   int waterlevel; /* integer to be converted into a millimeter range */ 
 } data_wl;
-SemaphoreHandle_t mutex_wl;
 
 struct package_light
 {
   int light;      /* integer to be converted into a percentage */
 } data_light;
+
+SemaphoreHandle_t mutex_temphum;
+SemaphoreHandle_t mutex_wl;
 SemaphoreHandle_t mutex_light;
 
 // ---------------
