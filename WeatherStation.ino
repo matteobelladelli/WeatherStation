@@ -36,7 +36,7 @@ dht11 DHT11;
 /* ldr */
 #define LDRPIN A0 
 #define LDRMAX 1023
-#define LDRMIN 800
+#define LDRMIN 0
 
 /* i2c lcd 1602 display */
 LiquidCrystal_I2C lcd(0x3f, 16, 2);
