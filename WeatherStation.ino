@@ -94,8 +94,6 @@ SemaphoreHandle_t mutex_light;
 
 void setup()
 {
-  //Serial.begin(9600);
-
   /* dht11 module */
   pinMode(DHTPIN, INPUT);
   
