@@ -35,8 +35,8 @@ dht11 DHT11;
 
 /* ldr */
 #define LDRPIN A0 
-#define LDRMAX 1023
-#define LDRMIN 0
+#define LDRMAX 972
+#define LDRMIN 340
 
 /* i2c lcd 1602 display */
 LiquidCrystal_I2C lcd(0x3f, 16, 2);
@@ -51,10 +51,10 @@ SevSeg sevseg;
 #define DHTDELAY 2000  /* temperature and humidity values update period */
 #define WLDELAY 2000   /* water level and rain values update period*/
 #define LDRDELAY 2000  /* light percentage value update period */
-#define LCDDELAY 2000   /* i2c lcd 1602 display print period */
+#define LCDDELAY 2000  /* i2c lcd 1602 display print period */
 #define SEGDELAY 2000  /* 7-segment display print period */
-#define LEDDELAY 20000  /* led blink period */
-#define INITDELAY 2000  /* initial delay of the output channels */
+#define LEDDELAY 20000 /* led blink period */
+#define INITDELAY 2000 /* initial delay of the output channels */
 
 /* task functions */
 void DHTUpdate( void *pvParameters );
@@ -276,7 +276,7 @@ void LCDPrint( void *pvParameters )
       }
       
       /* percentage conversion */
-      lightpercentage = (((float)light / LDRMAX) * 100);
+      lightpercentage = (((float)(light - LDRMIN) / (LDRMAX - LDRMIN)) * 100);
   
       lcd.clear();
       lcd.setCursor(0, 0);
