@@ -64,24 +64,28 @@ void LCDPrint( void *pvParameters );
 void SEGPrint( void *pvParameters );
 void LEDBlink( void *pvParameters );
 
-// -------------------------------------
-//      data structures and mutexes
-// -------------------------------------
+// -------------------------
+//      data structures
+// -------------------------
 
-struct package_temphum
-{
-  float temp;     /* celsius */
-  float hum;      /* percentage */
+/*
+ * temp : celsius
+ * hum : percentage
+ * waterlevel : integer to be converted into a millimeter range
+ * light : integer to be converted into a percentage
+ */
+ 
+struct package_temphum {
+  float temp;
+  float hum;
 } data_temphum;
 
-struct package_wl
-{
-  int waterlevel; /* integer to be converted into a millimeter range */ 
+struct package_wl {
+  int waterlevel;
 } data_wl;
 
-struct package_light
-{
-  int light;      /* integer to be converted into a percentage */
+struct package_light {
+  int light;
 } data_light;
 
 SemaphoreHandle_t mutex_temphum;
@@ -120,6 +124,7 @@ void setup()
   /* led */
   pinMode(LEDPIN, OUTPUT);
 
+  /* mutexes */
   mutex_temphum = xSemaphoreCreateMutex();
   mutex_wl= xSemaphoreCreateMutex();
   mutex_light = xSemaphoreCreateMutex();
@@ -230,7 +235,7 @@ void LDRUpdate( void *pvParameters )
 */
 void LCDPrint( void *pvParameters )
 {
-  /* initial delay to allow the sensors to collect initial data before displaying them */
+  /* initial delay to allow the sensors to collect initial data */
   vTaskDelay( INITDELAY / portTICK_PERIOD_MS );
 
   int iteration = 0;
