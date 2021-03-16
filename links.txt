@@ -1,4 +1,0 @@
-https://create.arduino.cc/projecthub/projects/tags/irrigation
--------------------------------------------------------------
-https://create.arduino.cc/projecthub/narangrahulrahul8/advanced-irrigation-system-eeb622?ref=tag&ref_id=irrigation&offset=2
-https://create.arduino.cc/projecthub/chuygen/smart-irrigation-controller-44ad38?ref=tag&ref_id=irrigation&offset=1
