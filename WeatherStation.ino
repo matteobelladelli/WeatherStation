@@ -53,7 +53,7 @@ SevSeg sevseg;
 #define LDRDELAY 2000  /* light percentage value update period */
 #define LCDDELAY 2000  /* i2c lcd 1602 display print period */
 #define SEGDELAY 2000  /* 7-segment display print period */
-#define LEDDELAY 20000 /* led blink period */
+#define LEDDELAY 2000 /* led blink period */
 #define INITDELAY 2000 /* initial delay of the output channels */
 
 /* task functions */
