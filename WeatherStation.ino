@@ -35,7 +35,7 @@ dht11 DHT11;
 
 /* ldr */
 #define LDRPIN A0 
-#define LDRMAX 972
+#define LDRMAX 1024
 #define LDRMIN 340
 
 /* i2c lcd 1602 display */
