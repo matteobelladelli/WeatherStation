@@ -5,7 +5,6 @@
  *
  *  temperature : dht11 module -> i2c lcd 1602 display
  *  humidity : dht11 module -> i2c lcd 1602 display
- *  water level : water level detection module -> 7-segment display
  *  rain : water detection module -> led
  *  light : ldr -> i2c lcd 1602 display
  */
@@ -14,7 +13,6 @@
 #include <semphr.h>
 #include <LiquidCrystal_I2C.h>
 #include <dht11.h>
-#include <SevSeg.h>
 
 /* dht11 module */
 #define DHTPIN 12
@@ -41,9 +39,6 @@ dht11 DHT11;
 /* i2c lcd 1602 display */
 LiquidCrystal_I2C lcd(0x3f, 16, 2);
 
-/* 7-segment display */
-SevSeg sevseg;
-
 /* led */
 #define LEDPIN 13
 
@@ -61,7 +56,6 @@ void DHTUpdate( void *pvParameters );
 void WLUpdate( void *pvParameters );
 void LDRUpdate( void *pvParameters );
 void LCDPrint( void *pvParameters );
-void SEGPrint( void *pvParameters );
 void LEDBlink( void *pvParameters );
 
 // -------------------------
@@ -71,7 +65,7 @@ void LEDBlink( void *pvParameters );
 /*
  * temp : celsius
  * hum : percentage
- * waterlevel : integer to be converted into a millimeter range
+ * waterlevel : integer to be converted into a millimeter value
  * light : integer to be converted into a percentage
  */
  
@@ -112,15 +106,6 @@ void setup()
   lcd.backlight();
   lcd.clear();
 
-  /* 7-segment display */
-  byte numDigits = 1;
-  byte digitPins[] = {};
-  byte segmentPins[] = {6, 5, 2, 3, 4, 7, 8, 9};
-  bool resistorsOnSegments = true;
-  byte hardwareConfig = COMMON_CATHODE;
-  sevseg.begin(hardwareConfig, numDigits, digitPins, segmentPins, resistorsOnSegments);
-  sevseg.setBrightness(90);
-
   /* led */
   pinMode(LEDPIN, OUTPUT);
 
@@ -136,7 +121,6 @@ void setup()
 
   /* output tasks */
   xTaskCreate( LCDPrint, "LCDPrint", 128, NULL, 1, NULL );
-  xTaskCreate( SEGPrint, "SEGPrint", 64, NULL, 1, NULL );
   xTaskCreate( LEDBlink, "LEDBlink", 48, NULL, 1, NULL );
   
 }
@@ -148,9 +132,8 @@ void loop() {}
 // --------------------------
 
 /*
-   input channel #1
-   dht11 temperature and humidity module
-   [temperature, humidity]
+   input channel #1: dht11 temperature and humidity module
+   for: temperature, humidity
 */
 void DHTUpdate( void *pvParameters )
 {
@@ -177,9 +160,8 @@ void DHTUpdate( void *pvParameters )
 }
 
 /*
-   input channel #2
-   water level detection module
-   [rain]
+   input channel #2: water level detection module
+   for: rain
 */
 void WLUpdate( void *pvParameters )
 {
@@ -201,9 +183,8 @@ void WLUpdate( void *pvParameters )
 }
 
 /*
-   input channel #3
-   ldr
-   [light]
+   input channel #3: ldr
+   for: light
 */
 void LDRUpdate( void *pvParameters )
 {
@@ -229,9 +210,8 @@ void LDRUpdate( void *pvParameters )
 // --------------------------
 
 /*
-   output channel #1
-   i2c lcd 1602 display
-   [temperature, humidity, light]
+   output channel #1: i2c lcd 1602 display
+   for: temperature, humidity, light
 */
 void LCDPrint( void *pvParameters )
 {
@@ -300,48 +280,8 @@ void LCDPrint( void *pvParameters )
 }
 
 /*
-   output channel #2
-   7-segment display
-   [water level]
-*/
-void SEGPrint( void *pvParameters )
-{
-  vTaskDelay( INITDELAY / portTICK_PERIOD_MS );
-
-  int waterlevel;
-  int range;
-
-  for (;;)
-  {
-    if (xSemaphoreTake(mutex_wl, 5) == pdTRUE)
-    {
-      waterlevel = data_wl.waterlevel;
-      xSemaphoreGive(mutex_wl);
-    }
-
-    /* range conversion */
-    if (waterlevel <= WL0) range = 0;
-    else if (waterlevel > WL0 && waterlevel <= WL1) range = 1;
-    else if (waterlevel > WL1 && waterlevel <= WL2) range = 2;
-    else if (waterlevel > WL2 && waterlevel <= WL3) range = 3;
-    else if (waterlevel > WL3 && waterlevel <= WL4) range = 4;
-    else if (waterlevel > WL4 && waterlevel <= WL5) range = 5;
-    else if (waterlevel > WL5 && waterlevel <= WL6) range = 6;
-    else if (waterlevel > WL6 && waterlevel <= WL7) range = 7;
-    else if (waterlevel > WL7 && waterlevel <= WL8) range = 8;
-    else if (waterlevel > WL8) range = 9
-
-    sevseg.setNumber(range);
-    sevseg.refreshDisplay();
-
-    vTaskDelay( SEGDELAY / portTICK_PERIOD_MS );
-  }
-}
-
-/*
-   output channel #3
-   led
-   [rain]
+   output channel #2: led
+   for: rain
 */
 void LEDBlink( void *pvParameters )
 {
