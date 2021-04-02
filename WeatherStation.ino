@@ -22,16 +22,16 @@ dht11 DHT11;
 
 /* water level detection module */
 #define WLPIN A1
-/* water level range boundaries, real value conversions in segprint function */
-#define WL0 480 //15
-#define WL1 530 //25
-#define WL2 615 //35
-#define WL3 660 //45
-#define WL4 680 //55
-#define WL5 690 //65
-#define WL6 700 //75
-#define WL7 705 //85
-#define WL8 710 //95
+/* water level range boundaries */
+#define WL0 480 /* 0mm */
+#define WL1 530 /* 0+mm to 5mm */
+#define WL2 615 /* 5+mm to 10mm */
+#define WL3 660 /* 10+mm to 15mm */
+#define WL4 680 /* 15+mm to 20mm */
+#define WL5 690 /* 20+mm to 25mm */
+#define WL6 700 /* 30+mm to 35mm */
+#define WL7 705 /* 35+mm to 40mm */
+#define WL8 710 /* 40+mm */
 
 /* ldr */
 #define LDRPIN A0 
@@ -320,16 +320,16 @@ void SEGPrint( void *pvParameters )
     }
 
     /* range conversion */
-    if (waterlevel <= WL0) range = 0;                           /* 0mm */
-    else if (waterlevel > WL0 && waterlevel <= WL1) range = 1;  /* 0+mm to 5mm */
-    else if (waterlevel > WL1 && waterlevel <= WL2) range = 2;  /* 5+mm to 10mm */
-    else if (waterlevel > WL2 && waterlevel <= WL3) range = 3;  /* 10+mm to 15mm */
-    else if (waterlevel > WL3 && waterlevel <= WL4) range = 4;  /* 15+mm to 20mm */
-    else if (waterlevel > WL4 && waterlevel <= WL5) range = 5;  /* 20+mm to 25mm */
-    else if (waterlevel > WL5 && waterlevel <= WL6) range = 6;  /* 25+mm to 30mm */
-    else if (waterlevel > WL6 && waterlevel <= WL7) range = 7;  /* 30+mm to 35mm */
-    else if (waterlevel > WL7 && waterlevel <= WL8) range = 8;  /* 35+mm to 40mm */
-    else if (waterlevel > WL8) range = 9;                       /* 40+mm */
+    if (waterlevel <= WL0) range = 0;
+    else if (waterlevel > WL0 && waterlevel <= WL1) range = 1;
+    else if (waterlevel > WL1 && waterlevel <= WL2) range = 2;
+    else if (waterlevel > WL2 && waterlevel <= WL3) range = 3;
+    else if (waterlevel > WL3 && waterlevel <= WL4) range = 4;
+    else if (waterlevel > WL4 && waterlevel <= WL5) range = 5;
+    else if (waterlevel > WL5 && waterlevel <= WL6) range = 6;
+    else if (waterlevel > WL6 && waterlevel <= WL7) range = 7;
+    else if (waterlevel > WL7 && waterlevel <= WL8) range = 8;
+    else if (waterlevel > WL8) range = 9
 
     sevseg.setNumber(range);
     sevseg.refreshDisplay();
