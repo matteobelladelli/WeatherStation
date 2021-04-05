@@ -15,9 +15,6 @@
 #include <LiquidCrystal_I2C.h>
 #include <dht11.h>
 
-/* button */
-#define BNTPIN 10
-
 /* dht11 module */
 #define DHTPIN 12
 dht11 DHT11;
