@@ -34,8 +34,8 @@ dht11 DHT11;
 
 /* ldr */
 #define LDRPIN A0 
-#define LDRMAX 970
-#define LDRMIN 710
+#define LDRMAX 1024 //970
+#define LDRMIN 0 //710
 
 /* i2c lcd 1602 display */
 LiquidCrystal_I2C lcd(0x3f, 16, 2);
@@ -298,7 +298,8 @@ void LCDPrint( void *pvParameters )
   
       lcd.clear();
       lcd.setCursor(0, 0);
-      lcd.print("LIGHT: ");
+      lcd.print("LIGHT:");
+      lcd.setCursor(0, 1);
       lcd.print(lightpercentage);
       lcd.print("%");
     }
