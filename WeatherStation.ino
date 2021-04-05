@@ -5,6 +5,7 @@
  *
  *  temperature : dht11 module -> i2c lcd 1602 display
  *  humidity : dht11 module -> i2c lcd 1602 display
+ *  water level : water detection module -> i2c lcd 1602 display
  *  rain : water detection module -> led
  *  light : ldr -> i2c lcd 1602 display
  */
@@ -48,7 +49,7 @@ LiquidCrystal_I2C lcd(0x3f, 16, 2);
 #define LDRDELAY 2000  /* light percentage value update period */
 #define LCDDELAY 2000  /* i2c lcd 1602 display print period */
 #define SEGDELAY 2000  /* 7-segment display print period */
-#define LEDDELAY 2000  /* led blink period */
+#define LEDDELAY 20000 /* led blink period */
 #define INITDELAY 2000 /* initial delay of the output channels */
 
 /* task functions */
@@ -211,7 +212,7 @@ void LDRUpdate( void *pvParameters )
 
 /*
    output channel #1: i2c lcd 1602 display
-   for: temperature, humidity, light
+   for: temperature, humidity, water level, light
 */
 void LCDPrint( void *pvParameters )
 {
@@ -222,6 +223,8 @@ void LCDPrint( void *pvParameters )
 
   float temp;
   float hum;
+  int waterlevel;
+  float waterlevel_norm;
   int light;
   float lightpercentage;
 
@@ -238,19 +241,47 @@ void LCDPrint( void *pvParameters )
       }
   
       lcd.clear();
-  
       lcd.setCursor(0, 0);
       lcd.print("TEMP: ");
       lcd.print(temp);
       lcd.print((char)223);
       lcd.print("C");
-  
       lcd.setCursor(0, 1);
       lcd.print("HUM: ");
       lcd.print(hum);
       lcd.print("%");
     }
     
+    /* water level */
+    else if (iteration == 1)
+    {
+      if (xSemaphoreTake(mutex_wl, 5) == pdTRUE)
+      {
+        waterlevel = data_wl.waterlevel;
+        xSemaphoreGive(mutex_wl);
+      }
+
+      waterlevel = 60;
+
+      if (waterlevel < WL0) waterlevel_norm = 0;
+      else if (waterlevel > WL0 && waterlevel <= WL1) waterlevel_norm = 0  + ((float)(waterlevel - WL0) / (WL1 - WL0)) * 5;
+      else if (waterlevel > WL1 && waterlevel <= WL2) waterlevel_norm = 5  + ((float)(waterlevel - WL1) / (WL2 - WL1)) * 5;
+      else if (waterlevel > WL2 && waterlevel <= WL3) waterlevel_norm = 10 + ((float)(waterlevel - WL2) / (WL3 - WL2)) * 5;
+      else if (waterlevel > WL3 && waterlevel <= WL4) waterlevel_norm = 15 + ((float)(waterlevel - WL3) / (WL4 - WL3)) * 5;
+      else if (waterlevel > WL4 && waterlevel <= WL5) waterlevel_norm = 20 + ((float)(waterlevel - WL4) / (WL5 - WL4)) * 5;
+      else if (waterlevel > WL5 && waterlevel <= WL6) waterlevel_norm = 25 + ((float)(waterlevel - WL5) / (WL6 - WL5)) * 5;
+      else if (waterlevel > WL6 && waterlevel <= WL7) waterlevel_norm = 30 + ((float)(waterlevel - WL6) / (WL7 - WL6)) * 5;
+      else if (waterlevel > WL7 && waterlevel <= WL8) waterlevel_norm = 35 + ((float)(waterlevel - WL7) / (WL8 - WL7)) * 5;
+
+      lcd.clear();      
+      lcd.setCursor(0, 0);
+      lcd.print("WATER LEVEL: ");
+      lcd.setCursor(0, 1);
+      if (waterlevel <= WL8) lcd.print(waterlevel_norm);
+      else lcd.print("40.00+");
+      lcd.print("mm");
+    }
+
     /* light */
     else
     {
@@ -273,7 +304,7 @@ void LCDPrint( void *pvParameters )
     }
 
     iteration++;
-    if (iteration > 1 ) iteration = 0;
+    if (iteration > 2 ) iteration = 0;
 
     vTaskDelay( LCDDELAY / portTICK_PERIOD_MS );
   }
