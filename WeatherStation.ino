@@ -134,7 +134,7 @@ void loop() {}
 
 /*
    input channel #1: dht11 temperature and humidity module
-   for: temperature, humidity
+   for updating: temperature, humidity
 */
 void DHTUpdate( void *pvParameters )
 {
@@ -146,8 +146,8 @@ void DHTUpdate( void *pvParameters )
     DHT11.read(DHTPIN);
     temp = (float)DHT11.temperature;
     hum = (float)DHT11.humidity;
-    //temp = random(0, 50);
-    //hum = random(10, 90);
+    //temp = random(0., 50.);
+    //hum = random(10., 90.);
 
     if (xSemaphoreTake(mutex_temphum, 5) == pdTRUE)
     {
@@ -162,7 +162,7 @@ void DHTUpdate( void *pvParameters )
 
 /*
    input channel #2: water level detection module
-   for: rain
+   for updating: water level
 */
 void WLUpdate( void *pvParameters )
 {
@@ -171,7 +171,7 @@ void WLUpdate( void *pvParameters )
   for (;;)
   {
     waterlevel = analogRead(WLPIN);
-    //waterlevel = random(100);
+    //waterlevel = random(720);
 
     if (xSemaphoreTake(mutex_wl, 5) == pdTRUE)
     {
@@ -185,7 +185,7 @@ void WLUpdate( void *pvParameters )
 
 /*
    input channel #3: ldr
-   for: light
+   for updating: light
 */
 void LDRUpdate( void *pvParameters )
 {
@@ -212,7 +212,7 @@ void LDRUpdate( void *pvParameters )
 
 /*
    output channel #1: i2c lcd 1602 display
-   for: temperature, humidity, water level, light
+   for displaying: temperature, humidity, water level, light
 */
 void LCDPrint( void *pvParameters )
 {
@@ -312,7 +312,7 @@ void LCDPrint( void *pvParameters )
 
 /*
    output channel #2: led
-   for: rain
+   for displaying: rain
 */
 void LEDBlink( void *pvParameters )
 {
