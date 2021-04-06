@@ -58,13 +58,12 @@ void LEDBlink( void *pvParameters );
 
 /* task periods */
 #define DHTDELAY  2000 /* temperature and humidity values update period */
-#define WLDELAY   2000 /* water level and rain values update period*/
-#define LDRDELAY  2000 /* light percentage value update period */
+#define WLDELAY   2000 /* water level value update period*/
+#define LDRDELAY  2000 /* light value update period */
 #define LCDDELAY  2000 /* i2c lcd 1602 display print period */
-#define SEGDELAY  2000 /* 7-segment display print period */
 #define LEDDELAY  2000 /* led blink period */
-#define INITDELAY 2000 /* initial delay of the output channels */
-#define BTNDELAY  100  /* button read period */
+#define INITDELAY 2000 /* initial delay of the output channels to allow the sensors to collect initial data */
+#define BTNDELAY  50   /* button read period */
 
 // -------------------------
 //      data structures
@@ -239,12 +238,14 @@ void LDRUpdate( void *pvParameters )
 void BTNRead( void *pvParameters )
 {
   (void) pvParameters;
+
+  vTaskDelay( INITDELAY / portTICK_PERIOD_MS );
   
   TickType_t last_wake_time;
-  uint8_t curr_state, prev_state = BTNNOTPRESSED; // states for the button
+  int curr_state, prev_state = BTNNOTPRESSED; // states for the button
   const TickType_t sample_interval = BTNDELAY / portTICK_PERIOD_MS;
 
-  // initialize the last_wake_time variable with the current time
+  // initialise the last_wake_time variable with the current time
   last_wake_time = xTaskGetTickCount();
 
   for (;;)
@@ -253,7 +254,7 @@ void BTNRead( void *pvParameters )
     vTaskDelayUntil( &last_wake_time, sample_interval );
     // get the level on button pin
     curr_state = digitalRead(BTNPIN);
-    if ((curr_state == BTNPRESSED) && (prev_state == BTNNOTPRESSED)) {
+    if ((curr_state == BTNPRESSED) && (prev_state == BTNNOTPRESSED)){
         xSemaphoreGiveFromISR(interruptsemaphore, NULL);
     }
     prev_state = curr_state;
@@ -272,9 +273,9 @@ void LCDPrint( void *pvParameters )
 {
   (void) pvParameters;
   
-  /* initial delay to allow the sensors to collect initial data */
   vTaskDelay( INITDELAY / portTICK_PERIOD_MS );
 
+  // displayed page [0 : temperature & humidity, 1 : water level, 2 : light]
   int page = -1;
 
   float temp;
@@ -282,7 +283,7 @@ void LCDPrint( void *pvParameters )
   int waterlevel;
   float waterlevel_norm;
   int light;
-  float lightpercentage;
+  float light_percentage;
 
   for (;;)
   {
@@ -346,15 +347,15 @@ void LCDPrint( void *pvParameters )
       }
       
       /* percentage conversion */
-      lightpercentage = (((float)(light - LDRMIN) / (LDRMAX - LDRMIN)) * 100);
-      if (lightpercentage < 0) lightpercentage = 0;
-      if (lightpercentage > 100) lightpercentage = 100;
+      light_percentage = (((float)(light - LDRMIN) / (LDRMAX - LDRMIN)) * 100);
+      if (light_percentage < 0) light_percentage = 0;
+      if (light_percentage > 100) light_percentage = 100;
   
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print("LIGHT:");
       lcd.setCursor(0, 1);
-      lcd.print(lightpercentage);
+      lcd.print(light_percentage);
       lcd.print("%");
     }
 
