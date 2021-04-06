@@ -34,8 +34,8 @@ dht11 DHT11;
 
 /* ldr */
 #define LDRPIN A0 
-#define LDRMAX 1024 //970
-#define LDRMIN 0 //710
+#define LDRMAX 1024
+#define LDRMIN 0
 
 /* i2c lcd 1602 display */
 LiquidCrystal_I2C lcd(0x3f, 16, 2);
@@ -43,21 +43,28 @@ LiquidCrystal_I2C lcd(0x3f, 16, 2);
 /* led */
 #define LEDPIN 13
 
-/* task periods */
-#define DHTDELAY 2000  /* temperature and humidity values update period */
-#define WLDELAY 2000   /* water level and rain values update period*/
-#define LDRDELAY 2000  /* light percentage value update period */
-#define LCDDELAY 2000  /* i2c lcd 1602 display print period */
-#define SEGDELAY 2000  /* 7-segment display print period */
-#define LEDDELAY 20000 /* led blink period */
-#define INITDELAY 2000 /* initial delay of the output channels */
+/* button */
+#define BTNPIN 2
+#define BTNPRESSED 0
+#define BTNNOTPRESSED 1
 
 /* task functions */
 void DHTUpdate( void *pvParameters );
 void WLUpdate( void *pvParameters );
 void LDRUpdate( void *pvParameters );
+void BTNRead( void *pvParameters );
 void LCDPrint( void *pvParameters );
 void LEDBlink( void *pvParameters );
+
+/* task periods */
+#define DHTDELAY  2000 /* temperature and humidity values update period */
+#define WLDELAY   2000 /* water level and rain values update period*/
+#define LDRDELAY  2000 /* light percentage value update period */
+#define LCDDELAY  2000 /* i2c lcd 1602 display print period */
+#define SEGDELAY  2000 /* 7-segment display print period */
+#define LEDDELAY  2000 /* led blink period */
+#define INITDELAY 2000 /* initial delay of the output channels */
+#define BTNDELAY  100  /* button read period */
 
 // -------------------------
 //      data structures
@@ -83,9 +90,14 @@ struct package_light {
   int light;
 } data_light;
 
+struct package_btn {
+  int btn;  
+} data_btn;
+
 SemaphoreHandle_t mutex_temphum;
 SemaphoreHandle_t mutex_wl;
 SemaphoreHandle_t mutex_light;
+SemaphoreHandle_t interruptsemaphore;
 
 // ---------------
 //      setup
@@ -110,19 +122,27 @@ void setup()
   /* led */
   pinMode(LEDPIN, OUTPUT);
 
-  /* mutexes */
+  /* button */
+  pinMode(BTNPIN, INPUT);
+  data_btn.btn = 0;
+
+  /* semaphores */
   mutex_temphum = xSemaphoreCreateMutex();
   mutex_wl= xSemaphoreCreateMutex();
   mutex_light = xSemaphoreCreateMutex();
+  interruptsemaphore = xSemaphoreCreateBinary();
 
   /* update tasks */
   xTaskCreate( DHTUpdate, "DHTUpdate", 64, NULL, 2, NULL );
   xTaskCreate( WLUpdate, "WLUpdate", 64, NULL, 2, NULL );
   xTaskCreate( LDRUpdate, "LDRUpdate", 64, NULL, 2, NULL );
-
+  xTaskCreate( BTNRead, "BTNRead", 64, NULL, 3, NULL );
+  
   /* output tasks */
   xTaskCreate( LCDPrint, "LCDPrint", 128, NULL, 1, NULL );
   xTaskCreate( LEDBlink, "LEDBlink", 48, NULL, 1, NULL );
+
+  vTaskStartScheduler();
   
 }
 
@@ -133,11 +153,13 @@ void loop() {}
 // --------------------------
 
 /*
-   input channel #1: dht11 temperature and humidity module
-   for updating: temperature, humidity
-*/
+ * input channel #1: dht11 temperature and humidity module
+ * for: updating temperature and humidity
+ */
 void DHTUpdate( void *pvParameters )
 {
+  (void) pvParameters;
+  
   float temp;
   float hum;
 
@@ -161,11 +183,13 @@ void DHTUpdate( void *pvParameters )
 }
 
 /*
-   input channel #2: water level detection module
-   for updating: water level
-*/
+ * input channel #2: water level detection module
+ * for: updating water level
+ */
 void WLUpdate( void *pvParameters )
 {
+  (void) pvParameters;
+  
   int waterlevel;
 
   for (;;)
@@ -184,11 +208,13 @@ void WLUpdate( void *pvParameters )
 }
 
 /*
-   input channel #3: ldr
-   for updating: light
-*/
+ * input channel #3: ldr
+ * for: updating light
+ */
 void LDRUpdate( void *pvParameters )
 {
+  (void) pvParameters;
+  
   int light;
 
   for (;;)
@@ -206,20 +232,50 @@ void LDRUpdate( void *pvParameters )
   }
 }
 
+/*
+ * input channel #4: button
+ * for: changing page on i2c lcd 1602 display
+ */
+void BTNRead( void *pvParameters )
+{
+  (void) pvParameters;
+  
+  TickType_t last_wake_time;
+  uint8_t curr_state, prev_state = BTNNOTPRESSED; // states for the button
+  const TickType_t sample_interval = BTNDELAY / portTICK_PERIOD_MS;
+
+  // initialize the last_wake_time variable with the current time
+  last_wake_time = xTaskGetTickCount();
+
+  for (;;)
+  {
+    // wait for the next cycle
+    vTaskDelayUntil( &last_wake_time, sample_interval );
+    // get the level on button pin
+    curr_state = digitalRead(BTNPIN);
+    if ((curr_state == BTNPRESSED) && (prev_state == BTNNOTPRESSED)) {
+        xSemaphoreGiveFromISR(interruptsemaphore, NULL);
+    }
+    prev_state = curr_state;
+  }
+}
+
 // --------------------------
 //      output functions
 // --------------------------
 
 /*
    output channel #1: i2c lcd 1602 display
-   for displaying: temperature, humidity, water level, light
+   for: displaying temperature, humidity, water level and light
 */
 void LCDPrint( void *pvParameters )
 {
+  (void) pvParameters;
+  
   /* initial delay to allow the sensors to collect initial data */
   vTaskDelay( INITDELAY / portTICK_PERIOD_MS );
 
-  int iteration = 0;
+  int page = -1;
 
   float temp;
   float hum;
@@ -231,7 +287,7 @@ void LCDPrint( void *pvParameters )
   for (;;)
   {
     /* temperature and humidity */
-    if (iteration == 0)
+    if (page == 0)
     {
       if (xSemaphoreTake(mutex_temphum, 5) == pdTRUE)
       {
@@ -253,15 +309,13 @@ void LCDPrint( void *pvParameters )
     }
     
     /* water level */
-    else if (iteration == 1)
+    else if (page == 1)
     {
       if (xSemaphoreTake(mutex_wl, 5) == pdTRUE)
       {
         waterlevel = data_wl.waterlevel;
         xSemaphoreGive(mutex_wl);
       }
-
-      waterlevel = 60;
 
       if (waterlevel < WL0) waterlevel_norm = 0;
       else if (waterlevel > WL0 && waterlevel <= WL1) waterlevel_norm = 0  + ((float)(waterlevel - WL0) / (WL1 - WL0)) * 5;
@@ -304,19 +358,22 @@ void LCDPrint( void *pvParameters )
       lcd.print("%");
     }
 
-    iteration++;
-    if (iteration > 2 ) iteration = 0;
-
-    vTaskDelay( LCDDELAY / portTICK_PERIOD_MS );
+    // wait LCDDELAY of button interrupt for updating data
+    if (xSemaphoreTake(interruptsemaphore, LCDDELAY / portTICK_PERIOD_MS ) == pdPASS) {
+      page++;  
+      if (page > 2 ) page = 0;
+    }
   }
 }
 
 /*
    output channel #2: led
-   for displaying: rain
+   for: displaying rain
 */
 void LEDBlink( void *pvParameters )
 {
+  (void) pvParameters;
+  
   vTaskDelay( INITDELAY / portTICK_PERIOD_MS );
 
   int waterlevel;
