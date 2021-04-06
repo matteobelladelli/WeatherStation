@@ -195,7 +195,7 @@ void WLUpdate( void *pvParameters )
   for (;;)
   {
     waterlevel = analogRead(WLPIN);
-    //waterlevel = random(720);
+    //waterlevel = random(400,720);
 
     if (xSemaphoreTake(mutex_wl, 5) == pdTRUE)
     {
@@ -358,7 +358,7 @@ void LCDPrint( void *pvParameters )
       lcd.print("%");
     }
 
-    // wait LCDDELAY of button interrupt for updating data
+    // wait lcddelay or button interrupt for updating data
     if (xSemaphoreTake(interruptsemaphore, LCDDELAY / portTICK_PERIOD_MS ) == pdPASS) {
       page++;  
       if (page > 2 ) page = 0;
