@@ -1,3 +1,4 @@
+
 /*
  *  -------------------------
  *       weather station
@@ -63,7 +64,7 @@ void LEDBlink( void *pvParameters );
 #define LCDDELAY  2000 /* i2c lcd 1602 display print period */
 #define LEDDELAY  2000 /* led blink period */
 #define INITDELAY 2000 /* initial delay of the output channels to allow the sensors to collect initial data */
-#define BTNDELAY  50   /* button read period */
+#define BTNDELAY  100   /* button read period */
 
 // -------------------------
 //      data structures
@@ -89,10 +90,6 @@ struct package_light {
   int light;
 } data_light;
 
-struct package_btn {
-  int btn;  
-} data_btn;
-
 SemaphoreHandle_t mutex_temphum;
 SemaphoreHandle_t mutex_wl;
 SemaphoreHandle_t mutex_light;
@@ -104,6 +101,7 @@ SemaphoreHandle_t interruptsemaphore;
 
 void setup()
 {
+  
   /* dht11 module */
   pinMode(DHTPIN, INPUT);
   
@@ -123,7 +121,6 @@ void setup()
 
   /* button */
   pinMode(BTNPIN, INPUT);
-  data_btn.btn = 0;
 
   /* semaphores */
   mutex_temphum = xSemaphoreCreateMutex();
