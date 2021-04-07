@@ -58,12 +58,12 @@ void LCDPrint( void *pvParameters );
 void LEDBlink( void *pvParameters );
 
 /* task periods */
-#define DHTDELAY  2000 /* temperature and humidity values update period */
-#define WLDELAY   2000 /* water level value update period*/
-#define LDRDELAY  2000 /* light value update period */
-#define LCDDELAY  2000 /* i2c lcd 1602 display print period */
-#define LEDDELAY  2000 /* led blink period */
-#define INITDELAY 2000 /* initial delay of the output channels to allow the sensors to collect initial data */
+#define DHTDELAY  2000  /* temperature and humidity values update period */
+#define WLDELAY   2000  /* water level value update period*/
+#define LDRDELAY  2000  /* light value update period */
+#define LCDDELAY  2000  /* i2c lcd 1602 display print period */
+#define LEDDELAY  20000 /* led blink period */
+#define INITDELAY 2000  /* initial delay of the output channels to allow the sensors to collect initial data */
 #define BTNDELAY  100   /* button read period */
 
 // -------------------------
@@ -129,10 +129,10 @@ void setup()
   interruptsemaphore = xSemaphoreCreateBinary();
 
   /* update tasks */
-  xTaskCreate( DHTUpdate, "DHTUpdate", 64, NULL, 2, NULL );
-  xTaskCreate( WLUpdate, "WLUpdate", 64, NULL, 2, NULL );
-  xTaskCreate( LDRUpdate, "LDRUpdate", 64, NULL, 2, NULL );
-  xTaskCreate( BTNRead, "BTNRead", 64, NULL, 3, NULL );
+  xTaskCreate( DHTUpdate, "DHTUpdate", 64, NULL, 3, NULL );
+  xTaskCreate( WLUpdate, "WLUpdate", 64, NULL, 3, NULL );
+  xTaskCreate( LDRUpdate, "LDRUpdate", 64, NULL, 3, NULL );
+  xTaskCreate( BTNRead, "BTNRead", 64, NULL, 5, NULL );
   
   /* output tasks */
   xTaskCreate( LCDPrint, "LCDPrint", 128, NULL, 1, NULL );
@@ -164,10 +164,10 @@ void DHTUpdate( void *pvParameters )
     DHT11.read(DHTPIN);
     temp = (float)DHT11.temperature;
     hum = (float)DHT11.humidity;
-    //temp = random(0., 50.);
-    //hum = random(10., 90.);
+    temp = random(0., 50.);
+    hum = random(10., 90.);
 
-    if (xSemaphoreTake(mutex_temphum, 5) == pdTRUE)
+    if (xSemaphoreTake(mutex_temphum, 10) == pdTRUE)
     {
       data_temphum.temp = temp;
       data_temphum.hum = hum;
@@ -191,9 +191,9 @@ void WLUpdate( void *pvParameters )
   for (;;)
   {
     waterlevel = analogRead(WLPIN);
-    //waterlevel = random(400,720);
+    waterlevel = random(400,720);
 
-    if (xSemaphoreTake(mutex_wl, 5) == pdTRUE)
+    if (xSemaphoreTake(mutex_wl, 10) == pdTRUE)
     {
       data_wl.waterlevel = waterlevel;
       xSemaphoreGive(mutex_wl);
@@ -218,7 +218,7 @@ void LDRUpdate( void *pvParameters )
     light = analogRead(LDRPIN);
     //light = random(0, 1024);
 
-    if (xSemaphoreTake(mutex_light, 5) == pdTRUE)
+    if (xSemaphoreTake(mutex_light, 10) == pdTRUE)
     {
       data_light.light = light;
       xSemaphoreGive(mutex_light);
@@ -287,7 +287,7 @@ void LCDPrint( void *pvParameters )
     /* temperature and humidity */
     if (page == 0)
     {
-      if (xSemaphoreTake(mutex_temphum, 5) == pdTRUE)
+      if (xSemaphoreTake(mutex_temphum, 10) == pdTRUE)
       {
         temp = data_temphum.temp;
         hum = data_temphum.hum;
@@ -309,7 +309,7 @@ void LCDPrint( void *pvParameters )
     /* water level */
     else if (page == 1)
     {
-      if (xSemaphoreTake(mutex_wl, 5) == pdTRUE)
+      if (xSemaphoreTake(mutex_wl, 10) == pdTRUE)
       {
         waterlevel = data_wl.waterlevel;
         xSemaphoreGive(mutex_wl);
@@ -337,7 +337,7 @@ void LCDPrint( void *pvParameters )
     /* light */
     else
     {
-      if (xSemaphoreTake(mutex_light, 5) == pdTRUE)
+      if (xSemaphoreTake(mutex_light, 10) == pdTRUE)
       {
         light = data_light.light;
         xSemaphoreGive(mutex_light);
@@ -380,7 +380,7 @@ void LEDBlink( void *pvParameters )
 
   for (;;)
   {
-    if (xSemaphoreTake(mutex_wl, 5) == pdTRUE)
+    if (xSemaphoreTake(mutex_wl, 10) == pdTRUE)
     {
       waterlevel = data_wl.waterlevel;
       xSemaphoreGive(mutex_wl);
