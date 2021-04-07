@@ -92,7 +92,7 @@ struct package_light {
 SemaphoreHandle_t mutex_temphum;
 SemaphoreHandle_t mutex_wl;
 SemaphoreHandle_t mutex_light;
-SemaphoreHandle_t interruptsemaphore;
+//SemaphoreHandle_t interruptsemaphore;
 
 // ---------------
 //      setup
@@ -100,7 +100,6 @@ SemaphoreHandle_t interruptsemaphore;
 
 void setup()
 {
-  
   /* dht11 module */
   pinMode(DHTPIN, INPUT);
   
@@ -119,21 +118,21 @@ void setup()
   pinMode(LEDPIN, OUTPUT);
 
   /* button */
-  pinMode(BTNPIN, INPUT);
-
+  //pinMode(BTNPIN, INPUT);
+  
   /* semaphores */
   mutex_temphum = xSemaphoreCreateMutex();
   mutex_wl= xSemaphoreCreateMutex();
   mutex_light = xSemaphoreCreateMutex();
-  interruptsemaphore = xSemaphoreCreateBinary();
+  //interruptsemaphore = xSemaphoreCreateBinary();
 
   /* update tasks */
-  xTaskCreate( DHTUpdate, "DHTUpdate", 64, NULL, 3, NULL );
-  xTaskCreate( WLUpdate, "WLUpdate", 64, NULL, 3, NULL );
-  xTaskCreate( LDRUpdate, "LDRUpdate", 64, NULL, 3, NULL );
+  xTaskCreate( DHTUpdate, "DHTUpdate", 64, NULL, 2, NULL );
+  xTaskCreate( WLUpdate, "WLUpdate", 64, NULL, 2, NULL );
+  xTaskCreate( LDRUpdate, "LDRUpdate", 64, NULL, 2, NULL );
 
   /* interrupt tasks */
-  xTaskCreate( BTNRead, "BTNRead", 64, NULL, 5, NULL );
+  //xTaskCreate( BTNRead, "BTNRead", 64, NULL, 5, NULL );
 
   /* output tasks */
   xTaskCreate( LCDPrint, "LCDPrint", 128, NULL, 1, NULL );
@@ -238,6 +237,7 @@ void LDRUpdate( void *pvParameters )
  * for: changing page on i2c lcd 1602 display
  */
 
+/*
 void BTNRead( void *pvParameters )
 {
   (void) pvParameters;
@@ -263,24 +263,25 @@ void BTNRead( void *pvParameters )
     prev_state = curr_state;
   }
 }
-
+*/
 
 // --------------------------
 //      output functions
 // --------------------------
 
 /*
-   output channel #1: i2c lcd 1602 display
-   for: displaying temperature, humidity, water level and light
-*/
+ * output channel #1: i2c lcd 1602 display
+ * for: displaying temperature, humidity, water level and light
+ */
 void LCDPrint( void *pvParameters )
 {
   (void) pvParameters;
   
+  /* initial delay to allow the sensors to collect initial data */
   vTaskDelay( INITDELAY / portTICK_PERIOD_MS );
 
   // displayed page {0 : temperature & humidity, 1 : water level, 2 : light}
-  int page = -1;
+  int page = 0;
 
   float temp;
   float hum;
@@ -291,14 +292,14 @@ void LCDPrint( void *pvParameters )
 
   for (;;)
   {
-    
     // wait lcddelay or button interrupt for updating data
+    /*
     if (xSemaphoreTake(interruptsemaphore, LCDDELAY / portTICK_PERIOD_MS) == pdPASS) {
       page++;
       if (page > 2) page = 0;
     }
+    */
     
-
     /* temperature and humidity */
     if (page == 0)
     {
@@ -320,9 +321,31 @@ void LCDPrint( void *pvParameters )
       lcd.print(hum);
       lcd.print("%");
     }
-    
-    /* water level */
+
+    /* light */
     else if (page == 1)
+    {
+      if (xSemaphoreTake(mutex_light, 5) == pdTRUE)
+      {
+        light = data_light.light;
+        xSemaphoreGive(mutex_light);
+      }
+      
+      /* percentage conversion */
+      light_percentage = (((float)(light - LDRMIN) / (LDRMAX - LDRMIN)) * 100);
+      if (light_percentage < 0) light_percentage = 0;
+      if (light_percentage > 100) light_percentage = 100;
+  
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("LIGHT:");
+      lcd.setCursor(0, 1);
+      lcd.print(light_percentage);
+      lcd.print("%");
+    }
+
+    /* water  */
+    else
     {
       if (xSemaphoreTake(mutex_wl, 5) == pdTRUE)
       {
@@ -349,44 +372,21 @@ void LCDPrint( void *pvParameters )
       lcd.print("mm");
     }
 
-    /* light */
-    else
-    {
-      if (xSemaphoreTake(mutex_light, 5) == pdTRUE)
-      {
-        light = data_light.light;
-        xSemaphoreGive(mutex_light);
-      }
-      
-      /* percentage conversion */
-      light_percentage = (((float)(light - LDRMIN) / (LDRMAX - LDRMIN)) * 100);
-      if (light_percentage < 0) light_percentage = 0;
-      if (light_percentage > 100) light_percentage = 100;
-  
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("LIGHT:");
-      lcd.setCursor(0, 1);
-      lcd.print(light_percentage);
-      lcd.print("%");
-    }
+    page++;
+    if (page > 1) page = 0;
 
-    //page++;
-    //if (page > 2) page = 0;
-    
-    //vTaskDelay( LCDDELAY / portTICK_PERIOD_MS );
-
+    vTaskDelay( LCDDELAY / portTICK_PERIOD_MS );
   }
 }
 
 /*
-   output channel #2: led
-   for: displaying rain
-*/
+ * output channel #2: led
+ * for: displaying rain
+ */
 void LEDBlink( void *pvParameters )
 {
   (void) pvParameters;
-  
+    
   vTaskDelay( INITDELAY / portTICK_PERIOD_MS );
 
   int waterlevel;
