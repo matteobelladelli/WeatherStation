@@ -1,4 +1,3 @@
-
 /*
  *  -------------------------
  *       weather station
@@ -132,8 +131,10 @@ void setup()
   xTaskCreate( DHTUpdate, "DHTUpdate", 64, NULL, 3, NULL );
   xTaskCreate( WLUpdate, "WLUpdate", 64, NULL, 3, NULL );
   xTaskCreate( LDRUpdate, "LDRUpdate", 64, NULL, 3, NULL );
+
+  /* interrupt tasks */
   xTaskCreate( BTNRead, "BTNRead", 64, NULL, 5, NULL );
-  
+
   /* output tasks */
   xTaskCreate( LCDPrint, "LCDPrint", 128, NULL, 1, NULL );
   xTaskCreate( LEDBlink, "LEDBlink", 48, NULL, 1, NULL );
@@ -167,7 +168,7 @@ void DHTUpdate( void *pvParameters )
     temp = random(0., 50.);
     hum = random(10., 90.);
 
-    if (xSemaphoreTake(mutex_temphum, 10) == pdTRUE)
+    if (xSemaphoreTake(mutex_temphum, 5) == pdTRUE)
     {
       data_temphum.temp = temp;
       data_temphum.hum = hum;
@@ -191,9 +192,9 @@ void WLUpdate( void *pvParameters )
   for (;;)
   {
     waterlevel = analogRead(WLPIN);
-    waterlevel = random(400,720);
+    waterlevel = random(400, 720);
 
-    if (xSemaphoreTake(mutex_wl, 10) == pdTRUE)
+    if (xSemaphoreTake(mutex_wl, 5) == pdTRUE)
     {
       data_wl.waterlevel = waterlevel;
       xSemaphoreGive(mutex_wl);
@@ -218,7 +219,7 @@ void LDRUpdate( void *pvParameters )
     light = analogRead(LDRPIN);
     //light = random(0, 1024);
 
-    if (xSemaphoreTake(mutex_light, 10) == pdTRUE)
+    if (xSemaphoreTake(mutex_light, 5) == pdTRUE)
     {
       data_light.light = light;
       xSemaphoreGive(mutex_light);
@@ -228,10 +229,15 @@ void LDRUpdate( void *pvParameters )
   }
 }
 
+// -----------------------------
+//      interrupt functions
+// -----------------------------
+
 /*
  * input channel #4: button
  * for: changing page on i2c lcd 1602 display
  */
+
 void BTNRead( void *pvParameters )
 {
   (void) pvParameters;
@@ -258,6 +264,7 @@ void BTNRead( void *pvParameters )
   }
 }
 
+
 // --------------------------
 //      output functions
 // --------------------------
@@ -272,7 +279,7 @@ void LCDPrint( void *pvParameters )
   
   vTaskDelay( INITDELAY / portTICK_PERIOD_MS );
 
-  // displayed page [0 : temperature & humidity, 1 : water level, 2 : light]
+  // displayed page {0 : temperature & humidity, 1 : water level, 2 : light}
   int page = -1;
 
   float temp;
@@ -284,10 +291,18 @@ void LCDPrint( void *pvParameters )
 
   for (;;)
   {
+    
+    // wait lcddelay or button interrupt for updating data
+    if (xSemaphoreTake(interruptsemaphore, LCDDELAY / portTICK_PERIOD_MS) == pdPASS) {
+      page++;
+      if (page > 2) page = 0;
+    }
+    
+
     /* temperature and humidity */
     if (page == 0)
     {
-      if (xSemaphoreTake(mutex_temphum, 10) == pdTRUE)
+      if (xSemaphoreTake(mutex_temphum, 5) == pdTRUE)
       {
         temp = data_temphum.temp;
         hum = data_temphum.hum;
@@ -309,7 +324,7 @@ void LCDPrint( void *pvParameters )
     /* water level */
     else if (page == 1)
     {
-      if (xSemaphoreTake(mutex_wl, 10) == pdTRUE)
+      if (xSemaphoreTake(mutex_wl, 5) == pdTRUE)
       {
         waterlevel = data_wl.waterlevel;
         xSemaphoreGive(mutex_wl);
@@ -337,7 +352,7 @@ void LCDPrint( void *pvParameters )
     /* light */
     else
     {
-      if (xSemaphoreTake(mutex_light, 10) == pdTRUE)
+      if (xSemaphoreTake(mutex_light, 5) == pdTRUE)
       {
         light = data_light.light;
         xSemaphoreGive(mutex_light);
@@ -356,11 +371,11 @@ void LCDPrint( void *pvParameters )
       lcd.print("%");
     }
 
-    // wait lcddelay or button interrupt for updating data
-    if (xSemaphoreTake(interruptsemaphore, LCDDELAY / portTICK_PERIOD_MS ) == pdPASS) {
-      page++;  
-      if (page > 2 ) page = 0;
-    }
+    //page++;
+    //if (page > 2) page = 0;
+    
+    //vTaskDelay( LCDDELAY / portTICK_PERIOD_MS );
+
   }
 }
 
@@ -380,7 +395,7 @@ void LEDBlink( void *pvParameters )
 
   for (;;)
   {
-    if (xSemaphoreTake(mutex_wl, 10) == pdTRUE)
+    if (xSemaphoreTake(mutex_wl, 5) == pdTRUE)
     {
       waterlevel = data_wl.waterlevel;
       xSemaphoreGive(mutex_wl);
