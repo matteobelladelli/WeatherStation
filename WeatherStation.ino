@@ -55,15 +55,17 @@ void LDRUpdate( void *pvParameters );
 void BTNRead( void *pvParameters );
 void LCDPrint( void *pvParameters );
 void LEDBlink( void *pvParameters );
+void SerialPrint( void *pvParameters );
 
 /* task periods */
-#define DHTDELAY  2000  /* temperature and humidity values update period */
-#define WLDELAY   2000  /* water level value update period*/
-#define LDRDELAY  2000  /* light value update period */
-#define LCDDELAY  2000  /* i2c lcd 1602 display print period */
-#define LEDDELAY  20000 /* led blink period */
-#define INITDELAY 2000  /* initial delay of the output channels to allow the sensors to collect initial data */
-#define BTNDELAY  100   /* button read period */
+#define DHTDELAY  2000   /* temperature and humidity values update period */
+#define WLDELAY   2000   /* water level value update period*/
+#define LDRDELAY  2000   /* light value update period */
+#define LCDDELAY  2000   /* i2c lcd 1602 display print period */
+#define LEDDELAY  20000  /* led blink period */
+#define SERIALDELAY 2000 /* serial refresh period */
+#define INITDELAY 2000   /* initial delay of the output channels to allow the sensors to collect initial data */
+#define BTNDELAY  100    /* button read period */
 
 // -------------------------
 //      data structures
@@ -92,7 +94,7 @@ struct package_light {
 SemaphoreHandle_t mutex_temphum;
 SemaphoreHandle_t mutex_wl;
 SemaphoreHandle_t mutex_light;
-//SemaphoreHandle_t interruptsemaphore;
+SemaphoreHandle_t interruptsemaphore;
 
 // ---------------
 //      setup
@@ -100,6 +102,9 @@ SemaphoreHandle_t mutex_light;
 
 void setup()
 {
+  /* serial monitor */
+  Serial.begin(9600);
+  
   /* dht11 module */
   pinMode(DHTPIN, INPUT);
   
@@ -118,13 +123,13 @@ void setup()
   pinMode(LEDPIN, OUTPUT);
 
   /* button */
-  //pinMode(BTNPIN, INPUT);
+  pinMode(BTNPIN, INPUT);
   
   /* semaphores */
   mutex_temphum = xSemaphoreCreateMutex();
   mutex_wl= xSemaphoreCreateMutex();
   mutex_light = xSemaphoreCreateMutex();
-  //interruptsemaphore = xSemaphoreCreateBinary();
+  interruptsemaphore = xSemaphoreCreateBinary();
 
   /* update tasks */
   xTaskCreate( DHTUpdate, "DHTUpdate", 64, NULL, 2, NULL );
@@ -132,11 +137,12 @@ void setup()
   xTaskCreate( LDRUpdate, "LDRUpdate", 64, NULL, 2, NULL );
 
   /* interrupt tasks */
-  //xTaskCreate( BTNRead, "BTNRead", 64, NULL, 5, NULL );
+  //xTaskCreate( BTNRead, "BTNRead", 64, NULL, 3, NULL );
 
   /* output tasks */
-  xTaskCreate( LCDPrint, "LCDPrint", 136, NULL, 1, NULL );
+  //xTaskCreate( LCDPrint, "LCDPrint", 144, NULL, 1, NULL );
   xTaskCreate( LEDBlink, "LEDBlink", 48, NULL, 1, NULL );
+  xTaskCreate( SerialPrint, "SerialPrint", 82, NULL, 1, NULL );
 
   vTaskStartScheduler();
   
@@ -216,7 +222,7 @@ void LDRUpdate( void *pvParameters )
   for (;;)
   {
     light = analogRead(LDRPIN);
-    //light = random(0, 1024);
+    light = random(0, 1024);
 
     if (xSemaphoreTake(mutex_light, 5) == pdTRUE)
     {
@@ -237,7 +243,6 @@ void LDRUpdate( void *pvParameters )
  * for: changing page on i2c lcd 1602 display
  */
 
-/*
 void BTNRead( void *pvParameters )
 {
   (void) pvParameters;
@@ -263,7 +268,6 @@ void BTNRead( void *pvParameters )
     prev_state = curr_state;
   }
 }
-*/
 
 // --------------------------
 //      output functions
@@ -281,7 +285,7 @@ void LCDPrint( void *pvParameters )
   vTaskDelay( INITDELAY / portTICK_PERIOD_MS );
 
   // displayed page {0 : temperature & humidity, 1 : water level, 2 : light}
-  int page = 0;
+  int page = -1;
 
   float temp;
   float hum;
@@ -293,12 +297,11 @@ void LCDPrint( void *pvParameters )
   for (;;)
   {
     // wait lcddelay or button interrupt for updating data
-    /*
+
     if (xSemaphoreTake(interruptsemaphore, LCDDELAY / portTICK_PERIOD_MS) == pdPASS) {
       page++;
       if (page > 1) page = 0;
     }
-    */
     
     /* temperature and humidity */
     if (page == 0)
@@ -351,7 +354,7 @@ void LCDPrint( void *pvParameters )
       else if (waterlevel > WL7 && waterlevel <= WL8) waterlevel_norm = 35 + ((float)(waterlevel - WL7) / (WL8 - WL7)) * 5;
 
       /* light percentage conversion */
-      light_percentage = (((float)(light - LDRMIN) / (LDRMAX - LDRMIN)) * 100);
+      light_percentage = ((float)(light - LDRMIN) / (LDRMAX - LDRMIN)) * 100;
       if (light_percentage < 0) light_percentage = 0;
       if (light_percentage > 100) light_percentage = 100;
 
@@ -369,10 +372,10 @@ void LCDPrint( void *pvParameters )
       lcd.print("%");
     }
 
-    page++;
-    if (page > 1) page = 0;
+    //page++;
+    //if (page > 1) page = 0;
 
-    vTaskDelay( LCDDELAY / portTICK_PERIOD_MS );
+    //vTaskDelay( LCDDELAY / portTICK_PERIOD_MS );
   }
 }
 
@@ -407,5 +410,69 @@ void LEDBlink( void *pvParameters )
     else digitalWrite(LEDPIN, LOW);
 
     vTaskDelay( LEDDELAY / portTICK_PERIOD_MS );
+  }
+}
+
+/*
+ * output channel #3: serial monitor
+ * for: graphical representation with matplotlib
+ */
+void SerialPrint( void *pvParameters )
+{
+  (void) pvParameters;
+    
+  vTaskDelay( INITDELAY / portTICK_PERIOD_MS );
+  
+  float temp;
+  float hum;
+  int waterlevel;
+  int waterlevel_norm;
+  int light;
+  int light_percentage;
+  
+  for (;;)
+  {    
+    if (xSemaphoreTake(mutex_temphum, 5) == pdTRUE)
+    {
+      temp = data_temphum.temp;
+      hum = data_temphum.hum;
+      xSemaphoreGive(mutex_temphum);
+    }
+    if (temp < 0) temp = 0;
+
+    if (xSemaphoreTake(mutex_wl, 5) == pdTRUE)
+    {
+      waterlevel = data_wl.waterlevel;
+      xSemaphoreGive(mutex_wl);
+    }
+    
+    if (xSemaphoreTake(mutex_light, 5) == pdTRUE)
+    {
+      light = data_light.light;
+      xSemaphoreGive(mutex_light);
+    }
+
+    /* water level millimeter conversion */
+    if (waterlevel < WL0) (int)(waterlevel_norm = 0);
+    else if (waterlevel > WL0 && waterlevel <= WL1) waterlevel_norm = (int)(0  + ((float)(waterlevel - WL0) / (WL1 - WL0)) * 5);
+    else if (waterlevel > WL1 && waterlevel <= WL2) waterlevel_norm = (int)(5  + ((float)(waterlevel - WL1) / (WL2 - WL1)) * 5);
+    else if (waterlevel > WL2 && waterlevel <= WL3) waterlevel_norm = (int)(10 + ((float)(waterlevel - WL2) / (WL3 - WL2)) * 5);
+    else if (waterlevel > WL3 && waterlevel <= WL4) waterlevel_norm = (int)(15 + ((float)(waterlevel - WL3) / (WL4 - WL3)) * 5);
+    else if (waterlevel > WL4 && waterlevel <= WL5) waterlevel_norm = (int)(20 + ((float)(waterlevel - WL4) / (WL5 - WL4)) * 5);
+    else if (waterlevel > WL5 && waterlevel <= WL6) waterlevel_norm = (int)(25 + ((float)(waterlevel - WL5) / (WL6 - WL5)) * 5);
+    else if (waterlevel > WL6 && waterlevel <= WL7) waterlevel_norm = (int)(30 + ((float)(waterlevel - WL6) / (WL7 - WL6)) * 5);
+    else if (waterlevel > WL7 && waterlevel <= WL8) waterlevel_norm = (int)(35 + ((float)(waterlevel - WL7) / (WL8 - WL7)) * 5);
+
+    /* light percentage conversion */
+    light_percentage = ((float)(light - LDRMIN) / (LDRMAX - LDRMIN)) * 100;
+    if (light_percentage < 0) light_percentage = 0;
+    if (light_percentage > 100) light_percentage = 100;
+    
+    Serial.write((int)temp);
+    Serial.write((int)hum);
+    Serial.write(waterlevel_norm);
+    Serial.write(light_percentage);
+
+    vTaskDelay( SERIALDELAY / portTICK_PERIOD_MS );
   }
 }
