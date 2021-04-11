@@ -462,6 +462,7 @@ void SerialPrint( void *pvParameters )
     else if (waterlevel > WL5 && waterlevel <= WL6) waterlevel_norm = (int)(25 + ((float)(waterlevel - WL5) / (WL6 - WL5)) * 5);
     else if (waterlevel > WL6 && waterlevel <= WL7) waterlevel_norm = (int)(30 + ((float)(waterlevel - WL6) / (WL7 - WL6)) * 5);
     else if (waterlevel > WL7 && waterlevel <= WL8) waterlevel_norm = (int)(35 + ((float)(waterlevel - WL7) / (WL8 - WL7)) * 5);
+    else if (waterlevel > WL8) (int)(waterlevel_norm = 40);
 
     /* light percentage conversion */
     light_percentage = ((float)(light - LDRMIN) / (LDRMAX - LDRMIN)) * 100;
