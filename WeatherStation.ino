@@ -103,7 +103,7 @@ SemaphoreHandle_t interruptsemaphore;
 void setup()
 {
   /* serial monitor */
-  Serial.begin(9600);
+  //Serial.begin(9600);
   
   /* dht11 module */
   pinMode(DHTPIN, INPUT);
@@ -137,12 +137,12 @@ void setup()
   xTaskCreate( LDRUpdate, "LDRUpdate", 64, NULL, 2, NULL );
 
   /* interrupt tasks */
-  //xTaskCreate( BTNRead, "BTNRead", 64, NULL, 3, NULL );
+  xTaskCreate( BTNRead, "BTNRead", 64, NULL, 3, NULL );
 
   /* output tasks */
-  //xTaskCreate( LCDPrint, "LCDPrint", 144, NULL, 1, NULL );
+  xTaskCreate( LCDPrint, "LCDPrint", 144, NULL, 1, NULL );
   xTaskCreate( LEDBlink, "LEDBlink", 48, NULL, 1, NULL );
-  xTaskCreate( SerialPrint, "SerialPrint", 82, NULL, 1, NULL );
+  //xTaskCreate( SerialPrint, "SerialPrint", 82, NULL, 1, NULL );
 
   vTaskStartScheduler();
   
@@ -273,6 +273,37 @@ void BTNRead( void *pvParameters )
 //      output functions
 // --------------------------
 
+/* water level conversion to millimeter value */
+float waterlevel_conversion(int waterlevel)
+{
+    float waterlevel_norm;
+    
+    if (waterlevel < WL0) waterlevel_norm = 0;
+    else if (waterlevel > WL0 && waterlevel <= WL1) waterlevel_norm = 0  + ((float)(waterlevel - WL0) / (WL1 - WL0)) * 5;
+    else if (waterlevel > WL1 && waterlevel <= WL2) waterlevel_norm = 5  + ((float)(waterlevel - WL1) / (WL2 - WL1)) * 5;
+    else if (waterlevel > WL2 && waterlevel <= WL3) waterlevel_norm = 10 + ((float)(waterlevel - WL2) / (WL3 - WL2)) * 5;
+    else if (waterlevel > WL3 && waterlevel <= WL4) waterlevel_norm = 15 + ((float)(waterlevel - WL3) / (WL4 - WL3)) * 5;
+    else if (waterlevel > WL4 && waterlevel <= WL5) waterlevel_norm = 20 + ((float)(waterlevel - WL4) / (WL5 - WL4)) * 5;
+    else if (waterlevel > WL5 && waterlevel <= WL6) waterlevel_norm = 25 + ((float)(waterlevel - WL5) / (WL6 - WL5)) * 5;
+    else if (waterlevel > WL6 && waterlevel <= WL7) waterlevel_norm = 30 + ((float)(waterlevel - WL6) / (WL7 - WL6)) * 5;
+    else if (waterlevel > WL7 && waterlevel <= WL8) waterlevel_norm = 35 + ((float)(waterlevel - WL7) / (WL8 - WL7)) * 5;
+    else if (waterlevel > WL8) waterlevel_norm = 40;
+
+    return waterlevel_norm;
+}
+
+/* light conversion to percentage value */
+float light_conversion(int light)
+{
+  float light_percentage;
+  
+  light_percentage = ((float)(light - LDRMIN) / (LDRMAX - LDRMIN)) * 100;
+  if (light_percentage < 0) light_percentage = 0;
+  if (light_percentage > 100) light_percentage = 100;
+  
+  return light_percentage;
+}
+
 /*
  * output channel #1: i2c lcd 1602 display
  * for: displaying temperature, humidity, water level and light
@@ -342,21 +373,8 @@ void LCDPrint( void *pvParameters )
         xSemaphoreGive(mutex_light);
       }
 
-      /* water level millimeter conversion */
-      if (waterlevel < WL0) waterlevel_norm = 0;
-      else if (waterlevel > WL0 && waterlevel <= WL1) waterlevel_norm = 0  + ((float)(waterlevel - WL0) / (WL1 - WL0)) * 5;
-      else if (waterlevel > WL1 && waterlevel <= WL2) waterlevel_norm = 5  + ((float)(waterlevel - WL1) / (WL2 - WL1)) * 5;
-      else if (waterlevel > WL2 && waterlevel <= WL3) waterlevel_norm = 10 + ((float)(waterlevel - WL2) / (WL3 - WL2)) * 5;
-      else if (waterlevel > WL3 && waterlevel <= WL4) waterlevel_norm = 15 + ((float)(waterlevel - WL3) / (WL4 - WL3)) * 5;
-      else if (waterlevel > WL4 && waterlevel <= WL5) waterlevel_norm = 20 + ((float)(waterlevel - WL4) / (WL5 - WL4)) * 5;
-      else if (waterlevel > WL5 && waterlevel <= WL6) waterlevel_norm = 25 + ((float)(waterlevel - WL5) / (WL6 - WL5)) * 5;
-      else if (waterlevel > WL6 && waterlevel <= WL7) waterlevel_norm = 30 + ((float)(waterlevel - WL6) / (WL7 - WL6)) * 5;
-      else if (waterlevel > WL7 && waterlevel <= WL8) waterlevel_norm = 35 + ((float)(waterlevel - WL7) / (WL8 - WL7)) * 5;
-
-      /* light percentage conversion */
-      light_percentage = ((float)(light - LDRMIN) / (LDRMAX - LDRMIN)) * 100;
-      if (light_percentage < 0) light_percentage = 0;
-      if (light_percentage > 100) light_percentage = 100;
+      waterlevel_norm = waterlevel_conversion(waterlevel);
+      light_percentage = light_conversion(light);
 
       lcd.clear();
       
@@ -417,6 +435,7 @@ void LEDBlink( void *pvParameters )
  * output channel #3: serial monitor
  * for: graphical representation with matplotlib
  */
+/*
 void SerialPrint( void *pvParameters )
 {
   (void) pvParameters;
@@ -452,22 +471,8 @@ void SerialPrint( void *pvParameters )
       xSemaphoreGive(mutex_light);
     }
 
-    /* water level millimeter conversion */
-    if (waterlevel < WL0) (int)(waterlevel_norm = 0);
-    else if (waterlevel > WL0 && waterlevel <= WL1) waterlevel_norm = (int)(0  + ((float)(waterlevel - WL0) / (WL1 - WL0)) * 5);
-    else if (waterlevel > WL1 && waterlevel <= WL2) waterlevel_norm = (int)(5  + ((float)(waterlevel - WL1) / (WL2 - WL1)) * 5);
-    else if (waterlevel > WL2 && waterlevel <= WL3) waterlevel_norm = (int)(10 + ((float)(waterlevel - WL2) / (WL3 - WL2)) * 5);
-    else if (waterlevel > WL3 && waterlevel <= WL4) waterlevel_norm = (int)(15 + ((float)(waterlevel - WL3) / (WL4 - WL3)) * 5);
-    else if (waterlevel > WL4 && waterlevel <= WL5) waterlevel_norm = (int)(20 + ((float)(waterlevel - WL4) / (WL5 - WL4)) * 5);
-    else if (waterlevel > WL5 && waterlevel <= WL6) waterlevel_norm = (int)(25 + ((float)(waterlevel - WL5) / (WL6 - WL5)) * 5);
-    else if (waterlevel > WL6 && waterlevel <= WL7) waterlevel_norm = (int)(30 + ((float)(waterlevel - WL6) / (WL7 - WL6)) * 5);
-    else if (waterlevel > WL7 && waterlevel <= WL8) waterlevel_norm = (int)(35 + ((float)(waterlevel - WL7) / (WL8 - WL7)) * 5);
-    else if (waterlevel > WL8) (int)(waterlevel_norm = 40);
-
-    /* light percentage conversion */
-    light_percentage = ((float)(light - LDRMIN) / (LDRMAX - LDRMIN)) * 100;
-    if (light_percentage < 0) light_percentage = 0;
-    if (light_percentage > 100) light_percentage = 100;
+    waterlevel_norm = (int)waterlevel_conversion(waterlevel);
+    light_percentage = (int)light_conversion(light);
     
     Serial.write((int)temp);
     Serial.write((int)hum);
@@ -476,4 +481,4 @@ void SerialPrint( void *pvParameters )
 
     vTaskDelay( SERIALDELAY / portTICK_PERIOD_MS );
   }
-}
+}*/
