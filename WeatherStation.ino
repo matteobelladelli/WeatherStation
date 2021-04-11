@@ -135,7 +135,7 @@ void setup()
   //xTaskCreate( BTNRead, "BTNRead", 64, NULL, 5, NULL );
 
   /* output tasks */
-  xTaskCreate( LCDPrint, "LCDPrint", 128, NULL, 1, NULL );
+  xTaskCreate( LCDPrint, "LCDPrint", 136, NULL, 1, NULL );
   xTaskCreate( LEDBlink, "LEDBlink", 48, NULL, 1, NULL );
 
   vTaskStartScheduler();
@@ -327,16 +327,16 @@ void LCDPrint( void *pvParameters )
     /* water level and light */
     else if (page == 1)
     {
-      if (xSemaphoreTake(mutex_light, 5) == pdTRUE)
-      {
-        light = data_light.light;
-        xSemaphoreGive(mutex_light);
-      }
-
       if (xSemaphoreTake(mutex_wl, 5) == pdTRUE)
       {
         waterlevel = data_wl.waterlevel;
         xSemaphoreGive(mutex_wl);
+      }
+      
+      if (xSemaphoreTake(mutex_light, 5) == pdTRUE)
+      {
+        light = data_light.light;
+        xSemaphoreGive(mutex_light);
       }
 
       /* water level millimeter conversion */
