@@ -433,7 +433,7 @@ void LEDBlink( void *pvParameters )
 
 /*
  * output channel #3: serial monitor
- * for: graphical representation with matplotlib
+ * for: graphical representation using python matplotlib
  */
 /*
 void SerialPrint( void *pvParameters )
