@@ -84,5 +84,5 @@ def run(data):
 
     return line
 
-ani = animation.FuncAnimation(fig, run, data_gen, interval=2, blit=True, repeat=False)
+ani = animation.FuncAnimation(fig, run, data_gen, interval=10, blit=True, repeat=False)
 plt.show()
