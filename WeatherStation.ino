@@ -296,7 +296,7 @@ void LCDPrint( void *pvParameters )
     /*
     if (xSemaphoreTake(interruptsemaphore, LCDDELAY / portTICK_PERIOD_MS) == pdPASS) {
       page++;
-      if (page > 2) page = 0;
+      if (page > 1) page = 0;
     }
     */
     
@@ -311,18 +311,20 @@ void LCDPrint( void *pvParameters )
       }
   
       lcd.clear();
+      
       lcd.setCursor(0, 0);
       lcd.print("TEMP: ");
       lcd.print(temp);
       lcd.print((char)223);
       lcd.print("C");
+      
       lcd.setCursor(0, 1);
       lcd.print("HUM: ");
       lcd.print(hum);
       lcd.print("%");
     }
 
-    /* light */
+    /* water level and light */
     else if (page == 1)
     {
       if (xSemaphoreTake(mutex_light, 5) == pdTRUE)
@@ -330,29 +332,14 @@ void LCDPrint( void *pvParameters )
         light = data_light.light;
         xSemaphoreGive(mutex_light);
       }
-      
-      /* percentage conversion */
-      light_percentage = (((float)(light - LDRMIN) / (LDRMAX - LDRMIN)) * 100);
-      if (light_percentage < 0) light_percentage = 0;
-      if (light_percentage > 100) light_percentage = 100;
-  
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("LIGHT:");
-      lcd.setCursor(0, 1);
-      lcd.print(light_percentage);
-      lcd.print("%");
-    }
 
-    /* water  */
-    else
-    {
       if (xSemaphoreTake(mutex_wl, 5) == pdTRUE)
       {
         waterlevel = data_wl.waterlevel;
         xSemaphoreGive(mutex_wl);
       }
 
+      /* water level millimeter conversion */
       if (waterlevel < WL0) waterlevel_norm = 0;
       else if (waterlevel > WL0 && waterlevel <= WL1) waterlevel_norm = 0  + ((float)(waterlevel - WL0) / (WL1 - WL0)) * 5;
       else if (waterlevel > WL1 && waterlevel <= WL2) waterlevel_norm = 5  + ((float)(waterlevel - WL1) / (WL2 - WL1)) * 5;
@@ -363,13 +350,23 @@ void LCDPrint( void *pvParameters )
       else if (waterlevel > WL6 && waterlevel <= WL7) waterlevel_norm = 30 + ((float)(waterlevel - WL6) / (WL7 - WL6)) * 5;
       else if (waterlevel > WL7 && waterlevel <= WL8) waterlevel_norm = 35 + ((float)(waterlevel - WL7) / (WL8 - WL7)) * 5;
 
-      lcd.clear();      
+      /* light percentage conversion */
+      light_percentage = (((float)(light - LDRMIN) / (LDRMAX - LDRMIN)) * 100);
+      if (light_percentage < 0) light_percentage = 0;
+      if (light_percentage > 100) light_percentage = 100;
+
+      lcd.clear();
+      
       lcd.setCursor(0, 0);
-      lcd.print("WATER LEVEL: ");
-      lcd.setCursor(0, 1);
+      lcd.print("WL: ");
       if (waterlevel <= WL8) lcd.print(waterlevel_norm);
       else lcd.print("40.00+");
       lcd.print("mm");
+      
+      lcd.setCursor(0, 1);
+      lcd.print("LIGHT: ");
+      lcd.print(light_percentage);
+      lcd.print("%");
     }
 
     page++;
