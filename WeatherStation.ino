@@ -278,7 +278,7 @@ float waterlevel_conversion(int waterlevel)
 {
     float waterlevel_norm;
     
-    if (waterlevel < WL0) waterlevel_norm = 0;
+    if (waterlevel <= WL0) waterlevel_norm = 0;
     else if (waterlevel > WL0 && waterlevel <= WL1) waterlevel_norm = 0  + ((float)(waterlevel - WL0) / (WL1 - WL0)) * 5;
     else if (waterlevel > WL1 && waterlevel <= WL2) waterlevel_norm = 5  + ((float)(waterlevel - WL1) / (WL2 - WL1)) * 5;
     else if (waterlevel > WL2 && waterlevel <= WL3) waterlevel_norm = 10 + ((float)(waterlevel - WL2) / (WL3 - WL2)) * 5;
@@ -481,4 +481,5 @@ void SerialPrint( void *pvParameters )
 
     vTaskDelay( SERIALDELAY / portTICK_PERIOD_MS );
   }
-}*/
+}
+*/
