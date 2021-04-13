@@ -295,13 +295,13 @@ float waterlevel_conversion(int waterlevel)
 /* light conversion to percentage value */
 float light_conversion(int light)
 {
-  float light_percentage;
+  float light_pct;
   
-  light_percentage = ((float)(light - LDRMIN) / (LDRMAX - LDRMIN)) * 100;
-  if (light_percentage < 0) light_percentage = 0;
-  if (light_percentage > 100) light_percentage = 100;
+  light_pct = ((float)(light - LDRMIN) / (LDRMAX - LDRMIN)) * 100;
+  if (light_pct < 0) light_pct = 0;
+  if (light_pct > 100) light_pct = 100;
   
-  return light_percentage;
+  return light_pct;
 }
 
 /*
@@ -323,7 +323,7 @@ void LCDPrint( void *pvParameters )
   int waterlevel;
   float waterlevel_norm;
   int light;
-  float light_percentage;
+  float light_pct;
 
   for (;;)
   {
@@ -374,7 +374,7 @@ void LCDPrint( void *pvParameters )
       }
 
       waterlevel_norm = waterlevel_conversion(waterlevel);
-      light_percentage = light_conversion(light);
+      light_pct = light_conversion(light);
 
       lcd.clear();
       
@@ -386,7 +386,7 @@ void LCDPrint( void *pvParameters )
       
       lcd.setCursor(0, 1);
       lcd.print("LIGHT: ");
-      lcd.print(light_percentage);
+      lcd.print(light_pct);
       lcd.print("%");
     }
 
@@ -447,7 +447,7 @@ void SerialPrint( void *pvParameters )
   int waterlevel;
   int waterlevel_norm;
   int light;
-  int light_percentage;
+  int light_pct;
   
   for (;;)
   {    
@@ -472,12 +472,12 @@ void SerialPrint( void *pvParameters )
     }
 
     waterlevel_norm = (int)waterlevel_conversion(waterlevel);
-    light_percentage = (int)light_conversion(light);
+    light_pct = (int)light_conversion(light);
     
     Serial.write((int)temp);
     Serial.write((int)hum);
     Serial.write(waterlevel_norm);
-    Serial.write(light_percentage);
+    Serial.write(light_pct);
 
     vTaskDelay( SERIALDELAY / portTICK_PERIOD_MS );
   }
