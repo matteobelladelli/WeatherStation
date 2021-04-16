@@ -79,22 +79,22 @@ void SerialPrint( void *pvParameters );
  */
  
 struct package_temphum {
-  float temp = 0.;
-  float hum = 0.;
+  float temp;
+  float hum;
 } data_temphum;
 
 struct package_wl {
-  int waterlevel = 0;
+  int waterlevel;
 } data_wl;
 
 struct package_light {
-  int light = 0;
+  int light;
 } data_light;
 
 SemaphoreHandle_t mutex_temphum;
 SemaphoreHandle_t mutex_wl;
 SemaphoreHandle_t mutex_light;
-SemaphoreHandle_t interruptsemaphore;
+SemaphoreHandle_t interruptsem;
 
 // ---------------
 //      setup
@@ -131,7 +131,7 @@ void setup()
   mutex_temphum = xSemaphoreCreateMutex();
   mutex_wl= xSemaphoreCreateMutex();
   mutex_light = xSemaphoreCreateMutex();
-  interruptsemaphore = xSemaphoreCreateBinary();
+  interruptsem = xSemaphoreCreateBinary();
 
   /* update tasks */
   xTaskCreate( DHTUpdate, "DHTUpdate", 64, NULL, 2, NULL );
@@ -265,7 +265,7 @@ void BTNRead( void *pvParameters )
     // get the level on button pin
     curr_state = digitalRead(BTNPIN);
     if ((curr_state == BTNPRESSED) && (prev_state == BTNNOTPRESSED)){
-        xSemaphoreGiveFromISR(interruptsemaphore, NULL);
+        xSemaphoreGiveFromISR(interruptsem, NULL);
     }
     prev_state = curr_state;
   }
@@ -330,7 +330,7 @@ void LCDPrint( void *pvParameters )
   for (;;)
   {
     // wait lcddelay or button interrupt for updating data
-    if (xSemaphoreTake(interruptsemaphore, LCDDELAY / portTICK_PERIOD_MS) == pdPASS) {
+    if (xSemaphoreTake(interruptsem, LCDDELAY / portTICK_PERIOD_MS) == pdPASS) {
       page++;
       if (page > 1) page = 0;
     }
