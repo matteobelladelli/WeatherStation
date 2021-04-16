@@ -65,7 +65,7 @@ void SerialPrint( void *pvParameters );
 #define LEDDELAY  20000  /* led blink period */
 #define SERIALDELAY 2000 /* serial refresh period */
 #define INITDELAY 2000   /* initial delay of the output channels to allow the sensors to collect initial data */
-#define BTNDELAY  50    /* button read period */
+#define BTNDELAY  50     /* button read period */
 
 // -------------------------
 //      data structures
@@ -103,7 +103,7 @@ SemaphoreHandle_t interruptsemaphore;
 void setup()
 {
   /* serial monitor */
-  //Serial.begin(9600);
+  Serial.begin(9600);
 
   randomSeed(100);
   
@@ -139,12 +139,12 @@ void setup()
   xTaskCreate( LDRUpdate, "LDRUpdate", 64, NULL, 2, NULL );
 
   /* interrupt tasks */
-  xTaskCreate( BTNRead, "BTNRead", 64, NULL, 3, NULL );
+  //xTaskCreate( BTNRead, "BTNRead", 64, NULL, 3, NULL );
 
   /* output tasks */
-  xTaskCreate( LCDPrint, "LCDPrint", 144, NULL, 1, NULL );
-  xTaskCreate( LEDBlink, "LEDBlink", 48, NULL, 1, NULL );
-  //xTaskCreate( SerialPrint, "SerialPrint", 82, NULL, 1, NULL );
+  //xTaskCreate( LCDPrint, "LCDPrint", 144, NULL, 1, NULL );
+  //xTaskCreate( LEDBlink, "LEDBlink", 48, NULL, 1, NULL );
+  xTaskCreate( SerialPrint, "SerialPrint", 82, NULL, 1, NULL );
 
   vTaskStartScheduler();
   
@@ -432,7 +432,7 @@ void LEDBlink( void *pvParameters )
  * output channel #3: serial monitor
  * for: graphical representation using python matplotlib
  */
-/*
+
 void SerialPrint( void *pvParameters )
 {
   (void) pvParameters;
@@ -479,4 +479,3 @@ void SerialPrint( void *pvParameters )
     vTaskDelay( SERIALDELAY / portTICK_PERIOD_MS );
   }
 }
-*/
