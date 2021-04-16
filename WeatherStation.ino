@@ -65,7 +65,7 @@ void SerialPrint( void *pvParameters );
 #define LEDDELAY  20000  /* led blink period */
 #define SERIALDELAY 2000 /* serial refresh period */
 #define INITDELAY 2000   /* initial delay of the output channels to allow the sensors to collect initial data */
-#define BTNDELAY  100    /* button read period */
+#define BTNDELAY  50    /* button read period */
 
 // -------------------------
 //      data structures
@@ -79,16 +79,16 @@ void SerialPrint( void *pvParameters );
  */
  
 struct package_temphum {
-  float temp;
-  float hum;
+  float temp = 0.;
+  float hum = 0.;
 } data_temphum;
 
 struct package_wl {
-  int waterlevel;
+  int waterlevel = 0;
 } data_wl;
 
 struct package_light {
-  int light;
+  int light = 0;
 } data_light;
 
 SemaphoreHandle_t mutex_temphum;
@@ -103,7 +103,7 @@ SemaphoreHandle_t interruptsemaphore;
 void setup()
 {
   /* serial monitor */
-  Serial.begin(9600);
+  //Serial.begin(9600);
 
   randomSeed(100);
   
@@ -139,12 +139,12 @@ void setup()
   xTaskCreate( LDRUpdate, "LDRUpdate", 64, NULL, 2, NULL );
 
   /* interrupt tasks */
-  //xTaskCreate( BTNRead, "BTNRead", 64, NULL, 3, NULL );
+  xTaskCreate( BTNRead, "BTNRead", 64, NULL, 3, NULL );
 
   /* output tasks */
-  //xTaskCreate( LCDPrint, "LCDPrint", 144, NULL, 1, NULL );
-  //xTaskCreate( LEDBlink, "LEDBlink", 48, NULL, 1, NULL );
-  xTaskCreate( SerialPrint, "SerialPrint", 82, NULL, 1, NULL );
+  xTaskCreate( LCDPrint, "LCDPrint", 144, NULL, 1, NULL );
+  xTaskCreate( LEDBlink, "LEDBlink", 48, NULL, 1, NULL );
+  //xTaskCreate( SerialPrint, "SerialPrint", 82, NULL, 1, NULL );
 
   vTaskStartScheduler();
   
@@ -181,7 +181,7 @@ void DHTUpdate( void *pvParameters )
       data_temphum.hum = hum;
       xSemaphoreGive(mutex_temphum);
     }
-
+  
     vTaskDelay( DHTDELAY / portTICK_PERIOD_MS );
   }
 }
@@ -197,7 +197,7 @@ void WLUpdate( void *pvParameters )
   int waterlevel;
 
   for (;;)
-  {
+  { 
     waterlevel = analogRead(WLPIN);
     waterlevel = random(400, 720);
 
@@ -317,7 +317,7 @@ void LCDPrint( void *pvParameters )
   /* initial delay to allow the sensors to collect initial data */
   vTaskDelay( INITDELAY / portTICK_PERIOD_MS );
 
-  // displayed page {0 : temperature & humidity, 1 : water level, 2 : light}
+  // displayed page {0 : temperature & humidity, 1 : water level & light}
   int page = -1;
 
   float temp;
@@ -330,12 +330,11 @@ void LCDPrint( void *pvParameters )
   for (;;)
   {
     // wait lcddelay or button interrupt for updating data
-
     if (xSemaphoreTake(interruptsemaphore, LCDDELAY / portTICK_PERIOD_MS) == pdPASS) {
       page++;
       if (page > 1) page = 0;
     }
-    
+
     /* temperature and humidity */
     if (page == 0)
     {
@@ -361,7 +360,7 @@ void LCDPrint( void *pvParameters )
     }
 
     /* water level and light */
-    else if (page == 1)
+    else
     {
       if (xSemaphoreTake(mutex_wl, 5) == pdTRUE)
       {
@@ -392,10 +391,6 @@ void LCDPrint( void *pvParameters )
       lcd.print("%");
     }
 
-    //page++;
-    //if (page > 1) page = 0;
-
-    //vTaskDelay( LCDDELAY / portTICK_PERIOD_MS );
   }
 }
 
@@ -428,7 +423,7 @@ void LEDBlink( void *pvParameters )
 
     if (rain == true) digitalWrite(LEDPIN, HIGH);
     else digitalWrite(LEDPIN, LOW);
-
+  
     vTaskDelay( LEDDELAY / portTICK_PERIOD_MS );
   }
 }
@@ -437,6 +432,7 @@ void LEDBlink( void *pvParameters )
  * output channel #3: serial monitor
  * for: graphical representation using python matplotlib
  */
+/*
 void SerialPrint( void *pvParameters )
 {
   (void) pvParameters;
@@ -449,9 +445,9 @@ void SerialPrint( void *pvParameters )
   int waterlevel_norm;
   int light;
   int light_pct;
-  
+
   for (;;)
-  {    
+  {        
     if (xSemaphoreTake(mutex_temphum, 5) == pdTRUE)
     {
       temp = data_temphum.temp;
@@ -483,3 +479,4 @@ void SerialPrint( void *pvParameters )
     vTaskDelay( SERIALDELAY / portTICK_PERIOD_MS );
   }
 }
+*/

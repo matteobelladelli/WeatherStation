@@ -1,27 +1,27 @@
 DHTUpdate
 period (ms) : 2000
-wcet (ms) : 
+wcet (ms) : 62
 
 WLUpdate
 period (ms) : 2000
-wcet (ms) : 
+wcet (ms) : 2
 
 LDRUpdate
 period (ms) : 2000
-wcet (ms) : 
+wcet (ms) : 2
 
 BTNRead
-period (ms) : 100
-wcet (ms) : 
+period (ms) : 50
+wcet (ms) : 2
 
 LCDPrint
 period (ms) : 2000
-wcet (ms) : 
+wcet (ms) : 43
 
 LEDBlink
 period (ms) : 20000
-wcet (ms) : 
+wcet (ms) : 2
 
 SerialPrint
 period (ms) : 2000
-wcet (ms) : 
+wcet (ms) : 6
