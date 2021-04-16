@@ -1,0 +1,27 @@
+DHTUpdate
+period (ms) : 2000
+wcet (ms) : 
+
+WLUpdate
+period (ms) : 2000
+wcet (ms) : 
+
+LDRUpdate
+period (ms) : 2000
+wcet (ms) : 
+
+BTNRead
+period (ms) : 100
+wcet (ms) : 
+
+LCDPrint
+period (ms) : 2000
+wcet (ms) : 
+
+LEDBlink
+period (ms) : 20000
+wcet (ms) : 
+
+SerialPrint
+period (ms) : 2000
+wcet (ms) : 
