@@ -403,7 +403,7 @@ void LEDBlink( void *pvParameters )
   vTaskDelay( INITDELAY / portTICK_PERIOD_MS );
 
   int waterlevel;
-  int waterlevel_old = WL8;
+  int waterlevel_old = 720;
   boolean rain;
 
   for (;;)
