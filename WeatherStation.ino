@@ -104,8 +104,6 @@ void setup()
 {
   /* serial monitor */
   Serial.begin(9600);
-
-  randomSeed(100);
   
   /* dht11 module */
   pinMode(DHTPIN, INPUT);
@@ -139,11 +137,11 @@ void setup()
   xTaskCreate( LDRUpdate, "LDRUpdate", 64, NULL, 2, NULL );
 
   /* interrupt tasks */
-  //xTaskCreate( BTNRead, "BTNRead", 64, NULL, 3, NULL );
+  xTaskCreate( BTNRead, "BTNRead", 64, NULL, 3, NULL );
 
   /* output tasks */
-  //xTaskCreate( LCDPrint, "LCDPrint", 144, NULL, 1, NULL );
-  //xTaskCreate( LEDBlink, "LEDBlink", 48, NULL, 1, NULL );
+  xTaskCreate( LCDPrint, "LCDPrint", 144, NULL, 1, NULL );
+  xTaskCreate( LEDBlink, "LEDBlink", 48, NULL, 1, NULL );
   xTaskCreate( SerialPrint, "SerialPrint", 82, NULL, 1, NULL );
 
   vTaskStartScheduler();
@@ -172,8 +170,8 @@ void DHTUpdate( void *pvParameters )
     DHT11.read(DHTPIN);
     temp = (float)DHT11.temperature;
     hum = (float)DHT11.humidity;
-    temp = random(0., 50.);
-    hum = random(10., 90.);
+    //temp = random(0., 50.);
+    //hum = random(10., 90.);
 
     if (xSemaphoreTake(mutex_temphum, 5) == pdTRUE)
     {
@@ -199,7 +197,7 @@ void WLUpdate( void *pvParameters )
   for (;;)
   { 
     waterlevel = analogRead(WLPIN);
-    waterlevel = random(400, 720);
+    //waterlevel = random(400, 720);
 
     if (xSemaphoreTake(mutex_wl, 5) == pdTRUE)
     {
@@ -224,7 +222,7 @@ void LDRUpdate( void *pvParameters )
   for (;;)
   {
     light = analogRead(LDRPIN);
-    light = random(0, 1024);
+    //light = random(0, 1024);
 
     if (xSemaphoreTake(mutex_light, 5) == pdTRUE)
     {
@@ -432,7 +430,6 @@ void LEDBlink( void *pvParameters )
  * output channel #3: serial monitor
  * for: graphical representation using python matplotlib
  */
-
 void SerialPrint( void *pvParameters )
 {
   (void) pvParameters;
