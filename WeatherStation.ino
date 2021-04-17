@@ -105,7 +105,7 @@ void setup()
   /* serial monitor */
   Serial.begin(9600);
   
-  /* dht11 */
+  /* dht11 module */
   pinMode(DHTPIN, INPUT);
   
   /* water level detection module */
@@ -452,6 +452,7 @@ void SerialPrint( void *pvParameters )
       xSemaphoreGive(mutex_temphum);
     }
     if (temp < 0) temp = 0;
+    if (temp > 50) temp = 50;
 
     if (xSemaphoreTake(mutex_wl, 5) == pdTRUE)
     {
