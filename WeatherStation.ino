@@ -105,7 +105,7 @@ void setup()
   /* serial monitor */
   Serial.begin(9600);
   
-  /* dht11 module */
+  /* dht11 */
   pinMode(DHTPIN, INPUT);
   
   /* water level detection module */
