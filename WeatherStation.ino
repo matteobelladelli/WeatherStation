@@ -137,7 +137,7 @@ void setup()
   xTaskCreate( LDRUpdate, "LDRUpdate", 64, NULL, 2, NULL );
 
   /* interrupt tasks */
-  xTaskCreate( BTNRead, "BTNRead", 64, NULL, 3, NULL );
+  xTaskCreate( BTNRead, "BTNRead", 64, NULL, 2, NULL );
 
   /* output tasks */
   xTaskCreate( LCDPrint, "LCDPrint", 144, NULL, 1, NULL );
