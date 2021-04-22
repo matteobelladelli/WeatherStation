@@ -60,9 +60,7 @@ void LDRUpdate( void *pvParameters );
 void BTNRead( void *pvParameters );
 void LCDPrint( void *pvParameters );
 void LEDBlink( void *pvParameters );
-#ifndef UNO
 void SerialPrint( void *pvParameters );
-#endif
 
 /* task periods */
 #define DHTDELAY    2000  /* temperature and humidity values update period */
@@ -70,7 +68,7 @@ void SerialPrint( void *pvParameters );
 #define LDRDELAY    2000  /* light value update period */
 #define LCDDELAY    2000  /* i2c lcd 1602 display print period */
 #define LEDDELAY    20000 /* led blink period */
-#define SERIALDELAY 2000  /* serial refresh period */
+#define SERIALDELAY 2000  /* serial write period */
 #define INITDELAY   200   /* initial delay of the output channels to allow the sensors to collect initial data */
 #define BTNDELAY    50    /* button read period */
 
