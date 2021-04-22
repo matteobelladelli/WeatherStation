@@ -10,6 +10,11 @@
  *  light : ldr -> i2c lcd 1602 display
  */
 
+// use arduino uno board
+#define UNO
+// generate random values
+//#define RAND
+
 #include <Arduino_FreeRTOS.h>
 #include <semphr.h>
 #include <LiquidCrystal_I2C.h>
@@ -55,7 +60,9 @@ void LDRUpdate( void *pvParameters );
 void BTNRead( void *pvParameters );
 void LCDPrint( void *pvParameters );
 void LEDBlink( void *pvParameters );
+#ifndef UNO
 void SerialPrint( void *pvParameters );
+#endif
 
 /* task periods */
 #define DHTDELAY  2000   /* temperature and humidity values update period */
@@ -64,7 +71,7 @@ void SerialPrint( void *pvParameters );
 #define LCDDELAY  2000   /* i2c lcd 1602 display print period */
 #define LEDDELAY  20000  /* led blink period */
 #define SERIALDELAY 2000 /* serial refresh period */
-#define INITDELAY 2000   /* initial delay of the output channels to allow the sensors to collect initial data */
+#define INITDELAY 200    /* initial delay of the output channels to allow the sensors to collect initial data */
 #define BTNDELAY  50     /* button read period */
 
 // -------------------------
@@ -103,7 +110,9 @@ SemaphoreHandle_t interruptsem;
 void setup()
 {
   /* serial monitor */
+  #ifndef UNO
   Serial.begin(9600);
+  #endif
   
   /* dht11 module */
   pinMode(DHTPIN, INPUT);
@@ -142,7 +151,9 @@ void setup()
   /* output tasks */
   xTaskCreate( LCDPrint, "LCDPrint", 144, NULL, 1, NULL );
   xTaskCreate( LEDBlink, "LEDBlink", 48, NULL, 1, NULL );
+  #ifndef UNO
   xTaskCreate( SerialPrint, "SerialPrint", 82, NULL, 1, NULL );
+  #endif
 
   vTaskStartScheduler();
   
@@ -170,8 +181,10 @@ void DHTUpdate( void *pvParameters )
     DHT11.read(DHTPIN);
     temp = (float)DHT11.temperature;
     hum = (float)DHT11.humidity;
-    //temp = random(0., 50.);
-    //hum = random(10., 90.);
+    #ifdef RAND
+    temp = random(0., 50.);
+    hum = random(10., 90.);
+    #endif
 
     if (xSemaphoreTake(mutex_temphum, 5) == pdTRUE)
     {
@@ -197,7 +210,9 @@ void WLUpdate( void *pvParameters )
   for (;;)
   { 
     waterlevel = analogRead(WLPIN);
-    //waterlevel = random(400, 720);
+    #ifdef RAND
+    waterlevel = random(400, 720);
+    #endif
 
     if (xSemaphoreTake(mutex_wl, 5) == pdTRUE)
     {
@@ -222,7 +237,9 @@ void LDRUpdate( void *pvParameters )
   for (;;)
   {
     light = analogRead(LDRPIN);
-    //light = random(0, 1024);
+    #ifdef RAND
+    light = random(0, 1024);
+    #endif
 
     if (xSemaphoreTake(mutex_light, 5) == pdTRUE)
     {
@@ -430,6 +447,7 @@ void LEDBlink( void *pvParameters )
  * output channel #3: serial monitor
  * for: graphical representation using python matplotlib
  */
+#ifndef UNO
 void SerialPrint( void *pvParameters )
 {
   (void) pvParameters;
@@ -477,3 +495,4 @@ void SerialPrint( void *pvParameters )
     vTaskDelay( SERIALDELAY / portTICK_PERIOD_MS );
   }
 }
+#endif
