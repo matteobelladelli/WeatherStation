@@ -19,7 +19,7 @@ ys4 = []
 # This function is called periodically from FuncAnimation
 def animate(i, xs, ys1,ys2,ys3,ys4):
 
-    # Read temperature (Celsius) from TMP102
+    # Read data from serial monitor
     if arduino.in_waiting == 4:
         y1 = int.from_bytes(arduino.read(1), byteorder='little')
         y2 = int.from_bytes(arduino.read(1), byteorder='little')
@@ -51,7 +51,6 @@ def animate(i, xs, ys1,ys2,ys3,ys4):
     ax2.plot(xs, ys2, color='b')
     ax3.plot(xs, ys3, color='g')
     ax4.plot(xs, ys4, color='y')
-    # Format plot
 
     plt.setp(ax.xaxis.get_majorticklabels(), rotation=90)
     plt.setp(ax2.xaxis.get_majorticklabels(), rotation=90)
