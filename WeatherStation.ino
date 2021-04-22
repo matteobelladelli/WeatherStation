@@ -13,7 +13,7 @@
 // use arduino uno board
 #define UNO
 // use random generated values
-//#define RAND
+#define RAND
 
 #include <Arduino_FreeRTOS.h>
 #include <semphr.h>
@@ -65,14 +65,14 @@ void SerialPrint( void *pvParameters );
 #endif
 
 /* task periods */
-#define DHTDELAY  2000   /* temperature and humidity values update period */
-#define WLDELAY   2000   /* water level value update period*/
-#define LDRDELAY  2000   /* light value update period */
-#define LCDDELAY  2000   /* i2c lcd 1602 display print period */
-#define LEDDELAY  20000  /* led blink period */
-#define SERIALDELAY 2000 /* serial refresh period */
-#define INITDELAY 200    /* initial delay of the output channels to allow the sensors to collect initial data */
-#define BTNDELAY  50     /* button read period */
+#define DHTDELAY    2000  /* temperature and humidity values update period */
+#define WLDELAY     2000  /* water level value update period*/
+#define LDRDELAY    2000  /* light value update period */
+#define LCDDELAY    2000  /* i2c lcd 1602 display print period */
+#define LEDDELAY    20000 /* led blink period */
+#define SERIALDELAY 2000  /* serial refresh period */
+#define INITDELAY   200   /* initial delay of the output channels to allow the sensors to collect initial data */
+#define BTNDELAY    50    /* button read period */
 
 // -------------------------
 //      data structures
@@ -147,7 +147,7 @@ void setup()
   xTaskCreate( LDRUpdate, "LDRUpdate", 64, NULL, 2, NULL );
 
   /* interrupt tasks */
-  xTaskCreate( BTNRead, "BTNRead", 64, NULL, 2, NULL );
+  xTaskCreate( BTNRead, "BTNRead", 64, NULL, 3, NULL );
 
   /* output tasks */
   xTaskCreate( LCDPrint, "LCDPrint", 144, NULL, 1, NULL );
