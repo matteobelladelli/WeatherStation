@@ -19,7 +19,7 @@ ys4 = []
 # This function is called periodically from FuncAnimation
 def animate(i, xs, ys1,ys2,ys3,ys4):
 
-    # Read data from serial monitor
+    # Read data
     if arduino.in_waiting == 4:
         y1 = int.from_bytes(arduino.read(1), byteorder='little')
         y2 = int.from_bytes(arduino.read(1), byteorder='little')
