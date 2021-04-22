@@ -12,7 +12,7 @@
 
 // use arduino uno board
 #define UNO
-// generate random values
+// use random generated values
 //#define RAND
 
 #include <Arduino_FreeRTOS.h>
@@ -112,6 +112,7 @@ void setup()
   /* serial monitor */
   #ifndef UNO
   Serial.begin(9600);
+  while (!Serial);
   #endif
   
   /* dht11 module */
