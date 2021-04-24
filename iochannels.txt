@@ -1,0 +1,10 @@
+input channels:
+.dht11 module (temp, hum)
+.water detection module (wl)
+.ldr (light)
+.button
+
+output channels:
+.i2c lcd 1602 display (temp, hum, wl, ligh)
+.led (rain)
+.serial monitor (temp, hum, wl, ligh)
