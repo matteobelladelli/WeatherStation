@@ -262,8 +262,6 @@ void LDRUpdate( void *pvParameters )
 void BTNRead( void *pvParameters )
 {
   (void) pvParameters;
-
-  vTaskDelay( INITDELAY / portTICK_PERIOD_MS );
   
   TickType_t last_wake_time;
   int curr_state, prev_state = BTNNOTPRESSED; // states for the button
@@ -272,16 +270,18 @@ void BTNRead( void *pvParameters )
   // initialise the last_wake_time variable with the current time
   last_wake_time = xTaskGetTickCount();
 
+  vTaskDelay( INITDELAY / portTICK_PERIOD_MS );
+
   for (;;)
   {
-    // wait for the next cycle
-    vTaskDelayUntil( &last_wake_time, sample_interval );
     // get the level on button pin
     curr_state = digitalRead(BTNPIN);
     if ((curr_state == BTNPRESSED) && (prev_state == BTNNOTPRESSED)){
         xSemaphoreGiveFromISR(interruptsem, NULL);
     }
     prev_state = curr_state;
+    // wait for the next cycle
+    vTaskDelayUntil( &last_wake_time, sample_interval );
   }
 }
 
@@ -327,9 +327,6 @@ float light_conversion(int light)
 void LCDPrint( void *pvParameters )
 {
   (void) pvParameters;
-  
-  /* initial delay to allow the sensors to collect initial data */
-  vTaskDelay( INITDELAY / portTICK_PERIOD_MS );
 
   // displayed page {0 : temperature & humidity, 1 : water level & light}
   int page = -1;
@@ -340,6 +337,8 @@ void LCDPrint( void *pvParameters )
   float waterlevel_norm;
   int light;
   float light_pct;
+
+  vTaskDelay( INITDELAY / portTICK_PERIOD_MS );
 
   for (;;)
   {
@@ -415,12 +414,12 @@ void LCDPrint( void *pvParameters )
 void LEDBlink( void *pvParameters )
 {
   (void) pvParameters;
-    
-  vTaskDelay( INITDELAY / portTICK_PERIOD_MS );
-
+  
   int waterlevel;
   int waterlevel_old = 720;
   boolean rain;
+
+  vTaskDelay( INITDELAY / portTICK_PERIOD_MS );
 
   for (;;)
   {
@@ -450,16 +449,16 @@ void LEDBlink( void *pvParameters )
 void SerialPrint( void *pvParameters )
 {
   (void) pvParameters;
-    
-  vTaskDelay( INITDELAY / portTICK_PERIOD_MS );
-  
+
   float temp;
   float hum;
   int waterlevel;
   int waterlevel_norm;
   int light;
   int light_pct;
-
+    
+  vTaskDelay( INITDELAY / portTICK_PERIOD_MS );
+  
   for (;;)
   {        
     if (xSemaphoreTake(mutex_temphum, 5) == pdTRUE)

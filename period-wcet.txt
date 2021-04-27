@@ -1,27 +1,34 @@
 DHTUpdate
 period (ms) : 2000
 wcet (ms) : 62
+init delay (ms): 0
 
 WLUpdate
 period (ms) : 2000
 wcet (ms) : 2
+init delay (ms): 0
 
 LDRUpdate
 period (ms) : 2000
 wcet (ms) : 2
+init delay (ms): 0
 
 BTNRead
 period (ms) : 50
 wcet (ms) : 2
+init delay (ms): 200
 
 LCDPrint
 period (ms) : 2000
 wcet (ms) : 43
+init delay (ms): 200
 
 LEDBlink
 period (ms) : 20000
 wcet (ms) : 2
+init delay (ms): 200200
 
 SerialPrint
 period (ms) : 2000
 wcet (ms) : 6
+init delay (ms): 200
